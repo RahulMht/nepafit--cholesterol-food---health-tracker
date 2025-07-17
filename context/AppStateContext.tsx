@@ -466,7 +466,7 @@ const getFallbackWeeklySummary = (): WeeklySummary => ({
     { day: "Sat", value: 0 },
     { day: "Sun", value: 0 },
   ],
-  insight: "Unable to load weekly insights. Please check your connection and try again later.",
+  insight: "No data available for this time period. Start logging meals to see insights about your cholesterol intake and heart health.",
   todayMeals: [],
 });
 
@@ -559,6 +559,12 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
   });
   // NEW: Cache for past 6 weeks of data
   const [cachedWeeklyData, setCachedWeeklyData] = useState<Map<number, WeeklySummary>>(new Map());
+  // Request management to prevent duplicate requests
+  const [activeRequests, setActiveRequests] = useState<Map<number, Promise<WeeklySummary | null>>>(new Map());
+  // AbortController management for request cancellation
+  const [activeControllers, setActiveControllers] = useState<Map<number, AbortController>>(new Map());
+  // Rate limiting for requests
+  const [lastRequestTime, setLastRequestTime] = useState<Map<number, number>>(new Map());
   const [foodInfoPopup, setFoodInfoPopup] = useState<{ visible: boolean; meal: Meal | null }>({
     visible: false,
     meal: null,
@@ -596,14 +602,34 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
   // Calculate hasMeals based on today's meals
   const hasMeals = todayMeals.length > 0;
 
+  // Cleanup function to cancel all active requests
+  const cancelAllActiveRequests = () => {
+    console.log("Cancelling all active requests");
+    activeControllers.forEach((controller, weekOffset) => {
+      console.log(`Cancelling request for week ${weekOffset}`);
+      controller.abort();
+    });
+    setActiveControllers(new Map());
+    setActiveRequests(new Map());
+  };
+
   // Check network status
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      setIsOffline(!state.isConnected);
+      const wasOffline = isOffline;
+      const isNowOffline = !state.isConnected;
+      
+      setIsOffline(isNowOffline);
+      
+      // Cancel all active requests when going offline
+      if (!wasOffline && isNowOffline) {
+        console.log("Going offline, cancelling active requests");
+        cancelAllActiveRequests();
+      }
     });
 
     return unsubscribe;
-  }, []);
+  }, [isOffline]);
 
   // Initialize app
   useEffect(() => {
@@ -650,7 +676,11 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
       loadWeeklySummaryData(0);
     }, msUntilMidnight);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      // Cancel all active requests on unmount
+      cancelAllActiveRequests();
+    };
   }, []);
 
   // Filter today's meals whenever allMeals changes
@@ -699,7 +729,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     }
   };
 
-  // NEW: Preload past 6 weeks of data as backup
+  // NEW: Preload past 6 weeks of data as backup with better error handling
   const preloadPastWeeksData = async () => {
     if (isOffline) {
       console.log("App is offline, skipping preload of past weeks data");
@@ -710,25 +740,27 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
       console.log("Preloading past 6 weeks of data...");
       const weeklyDataMap = new Map<number, WeeklySummary>();
       
-      // Load past 6 weeks (weekOffset -1 to -6)
-      const loadPromises = [];
+      // Load past 6 weeks (weekOffset -1 to -6) sequentially to avoid overwhelming the API
       for (let weekOffset = -1; weekOffset >= -6; weekOffset--) {
-        loadPromises.push(
-          loadWeeklyDataFromAPI(weekOffset).then(data => {
-            if (data) {
-              weeklyDataMap.set(weekOffset, data);
-              console.log(`Cached data for week ${weekOffset}`);
-            }
-          }).catch(error => {
-            console.error(`Failed to load data for week ${weekOffset}:`, error);
-            // Set fallback data for failed weeks
+        try {
+          console.log(`Loading data for week ${weekOffset}...`);
+          const data = await loadWeeklyDataFromAPI(weekOffset);
+          if (data) {
+            weeklyDataMap.set(weekOffset, data);
+            console.log(`Successfully cached data for week ${weekOffset}`);
+          } else {
+            console.log(`No data available for week ${weekOffset}, using fallback`);
             weeklyDataMap.set(weekOffset, getFallbackWeeklySummary());
-          })
-        );
+          }
+          
+          // Add small delay between requests to prevent overwhelming the API
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error(`Failed to load data for week ${weekOffset}:`, error);
+          // Set fallback data for failed weeks
+          weeklyDataMap.set(weekOffset, getFallbackWeeklySummary());
+        }
       }
-      
-      // Wait for all weeks to load (with timeout)
-      await Promise.allSettled(loadPromises);
       
       setCachedWeeklyData(weeklyDataMap);
       console.log("Preloaded data for", weeklyDataMap.size, "past weeks");
@@ -738,78 +770,154 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     }
   };
 
-  // NEW: Load weekly data from API (extracted from loadWeeklySummaryData)
+  // NEW: Load weekly data from API (extracted from loadWeeklySummaryData) with request deduplication
   const loadWeeklyDataFromAPI = async (weekOffset: number): Promise<WeeklySummary | null> => {
-    try {
-      const { startDate, endDate } = getWeekDates(weekOffset);
-      
-      const requestPayload = {
-        startDate,
-        endDate,
-        type: "weekly"
-      };
+    // Check if there's already an active request for this week
+    const existingRequest = activeRequests.get(weekOffset);
+    if (existingRequest) {
+      console.log(`Reusing existing request for week ${weekOffset}`);
+      return existingRequest;
+    }
 
-      console.log(`Fetching weekly summary for week ${weekOffset} from webhook:`, SUMMARY_WEBHOOK);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-      const response = await fetch(SUMMARY_WEBHOOK, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestPayload),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const responseData = await response.json();
-      
-      // Handle the response format
-      let result;
-      if (Array.isArray(responseData) && responseData.length > 0) {
-        const firstElement = responseData[0];
-        if (firstElement && firstElement.output) {
-          result = firstElement.output;
-        } else {
-          result = firstElement;
-        }
-      } else if (responseData && responseData.output) {
-        result = responseData.output;
-      } else {
-        result = responseData;
-      }
-      
-      const weeklySummary: WeeklySummary = {
-        dailyCholesterol: result.dailyCholesterol || [
-          { day: "Mon", value: 0 },
-          { day: "Tue", value: 0 },
-          { day: "Wed", value: 0 },
-          { day: "Thu", value: 0 },
-          { day: "Fri", value: 0 },
-          { day: "Sat", value: 0 },
-          { day: "Sun", value: 0 },
-        ],
-        insight: result.dataAvailability 
-          ? (result.insight || "Track your meals consistently to get personalized heart health insights.")
-          : "No data available for this time period. Start logging meals to see insights.",
-        todayMeals: [], // Don't include todayMeals for past weeks
-      };
-      
-      return weeklySummary;
-    } catch (error) {
-      console.error(`Error loading weekly data for week ${weekOffset}:`, error);
+    // Rate limiting: prevent requests for the same week within 1 second
+    const now = Date.now();
+    const lastRequest = lastRequestTime.get(weekOffset);
+    if (lastRequest && (now - lastRequest) < 1000) {
+      console.log(`Rate limiting: skipping request for week ${weekOffset} (too soon)`);
       return null;
     }
+    setLastRequestTime(prev => new Map(prev).set(weekOffset, now));
+
+    // Create new request
+    const requestPromise = (async (): Promise<WeeklySummary | null> => {
+      try {
+        const { startDate, endDate } = getWeekDates(weekOffset);
+        
+        const requestPayload = {
+          startDate,
+          endDate,
+          type: "weekly"
+        };
+
+        console.log(`Fetching weekly summary for week ${weekOffset} from webhook:`, SUMMARY_WEBHOOK);
+        console.log(`Request payload:`, requestPayload);
+
+        // Cancel any existing request for this week
+        const existingController = activeControllers.get(weekOffset);
+        if (existingController) {
+          existingController.abort();
+        }
+
+        const controller = new AbortController();
+        setActiveControllers(prev => new Map(prev).set(weekOffset, controller));
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        const response = await fetch(SUMMARY_WEBHOOK, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestPayload),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+        console.log(`Weekly summary response status:`, response.status);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error(`No data found for the requested week`);
+          } else if (response.status >= 500) {
+            throw new Error(`Server error: ${response.status}`);
+          } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+        }
+
+        // Get response text first to handle malformed JSON
+        const responseText = await response.text();
+        console.log(`Weekly summary webhook response:`, responseText);
+
+        if (!responseText.trim()) {
+          throw new Error('Empty response from webhook');
+        }
+
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+        }
+        
+        // Handle the response format
+        let result;
+        if (Array.isArray(responseData) && responseData.length > 0) {
+          console.log(`Response is array, using first element:`, responseData[0]);
+          const firstElement = responseData[0];
+          if (firstElement && firstElement.output) {
+            result = firstElement.output;
+            console.log(`Extracted weekly data from array output wrapper:`, result);
+          } else {
+            result = firstElement;
+          }
+        } else if (responseData && responseData.output) {
+          result = responseData.output;
+        } else {
+          result = responseData;
+        }
+        
+        const weeklySummary: WeeklySummary = {
+          dailyCholesterol: result.dailyCholesterol || [
+            { day: "Mon", value: 0 },
+            { day: "Tue", value: 0 },
+            { day: "Wed", value: 0 },
+            { day: "Thu", value: 0 },
+            { day: "Fri", value: 0 },
+            { day: "Sat", value: 0 },
+            { day: "Sun", value: 0 },
+          ],
+          insight: result.dataAvailability 
+            ? (result.insight || "Track your meals consistently to get personalized heart health insights.")
+            : "No data available for this time period. Start logging meals to see insights.",
+          todayMeals: [], // Don't include todayMeals for past weeks
+        };
+        
+        console.log(`Transformed weekly summary:`, weeklySummary);
+        return weeklySummary;
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            console.log(`Request for week ${weekOffset} was cancelled`);
+          } else {
+            console.error(`Error loading weekly summary data for week ${weekOffset}:`, error.message);
+          }
+        } else {
+          console.error(`Unknown error loading weekly summary data for week ${weekOffset}:`, error);
+        }
+        return null;
+      } finally {
+        // Remove from active requests and controllers when done
+        setActiveRequests(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(weekOffset);
+          return newMap;
+        });
+        setActiveControllers(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(weekOffset);
+          return newMap;
+        });
+      }
+    })();
+
+    // Store the request promise
+    setActiveRequests(prev => new Map(prev).set(weekOffset, requestPromise));
+
+    return requestPromise;
   };
 
-  // MODIFIED: Load weekly summary data - use cache for past weeks, API for current week
+  // MODIFIED: Load weekly summary data - use cache for past weeks, API for current week with better error handling
   const loadWeeklySummaryData = async (weekOffset: number = 0) => {
     console.log(`Loading weekly summary for week offset: ${weekOffset}`);
     
@@ -832,6 +940,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
           setWeeklySummary(summaryWithTodayMeals);
           console.log("Loaded current week data from API");
         } else {
+          console.log("No data returned for current week, using fallback");
           setWeeklySummary(getFallbackWeeklySummary());
         }
       } catch (error) {
@@ -839,31 +948,36 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         setWeeklySummary(getFallbackWeeklySummary());
       }
     } else {
-      // For past weeks, use cached data
+      // For past weeks, use cached data first
       const cachedData = cachedWeeklyData.get(weekOffset);
       if (cachedData) {
         setWeeklySummary(cachedData);
         console.log(`Using cached data for week ${weekOffset}`);
-      } else {
-        // If not in cache, try to load from API as fallback
-        console.log(`No cached data for week ${weekOffset}, trying API...`);
-        if (!isOffline) {
-          try {
-            const weekData = await loadWeeklyDataFromAPI(weekOffset);
-            if (weekData) {
-              setWeeklySummary(weekData);
-              // Cache the newly loaded data
-              setCachedWeeklyData(prev => new Map(prev).set(weekOffset, weekData));
-            } else {
-              setWeeklySummary(getFallbackWeeklySummary());
-            }
-          } catch (error) {
-            console.error(`Error loading week ${weekOffset} data:`, error);
-            setWeeklySummary(getFallbackWeeklySummary());
-          }
+        return;
+      }
+
+      // If not in cache, try to load from API as fallback
+      console.log(`No cached data for week ${weekOffset}, trying API...`);
+      if (isOffline) {
+        console.log("App is offline, using fallback");
+        setWeeklySummary(getFallbackWeeklySummary());
+        return;
+      }
+
+      try {
+        const weekData = await loadWeeklyDataFromAPI(weekOffset);
+        if (weekData) {
+          setWeeklySummary(weekData);
+          // Cache the newly loaded data
+          setCachedWeeklyData(prev => new Map(prev).set(weekOffset, weekData));
+          console.log(`Loaded and cached data for week ${weekOffset}`);
         } else {
+          console.log(`No data available for week ${weekOffset}, using fallback`);
           setWeeklySummary(getFallbackWeeklySummary());
         }
+      } catch (error) {
+        console.error(`Error loading week ${weekOffset} data:`, error);
+        setWeeklySummary(getFallbackWeeklySummary());
       }
     }
   };

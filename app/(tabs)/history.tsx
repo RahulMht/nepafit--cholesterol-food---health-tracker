@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { StyleSheet, View, Text, Pressable } from "react-native";
 import { Stack } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
@@ -9,13 +9,42 @@ import { useAppState } from "@/context/AppStateContext";
 export default function HistoryScreen() {
   const { weeklySummary, isLoading, loadWeeklySummaryData } = useAppState();
   const [currentWeek, setCurrentWeek] = useState(0); // 0 = current week, -1 = last week, etc.
+  const [isLoadingWeek, setIsLoadingWeek] = useState(false);
+  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load data when week changes
+  // Load data when week changes with debounce
   useEffect(() => {
-    loadWeeklySummaryData(currentWeek);
+    // Clear any existing timeout
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+    }
+
+    // Set loading state
+    setIsLoadingWeek(true);
+
+    // Debounce the load request
+    loadTimeoutRef.current = setTimeout(async () => {
+      try {
+        await loadWeeklySummaryData(currentWeek);
+      } catch (error) {
+        console.error("Error loading weekly data:", error);
+      } finally {
+        setIsLoadingWeek(false);
+      }
+    }, 300); // 300ms debounce
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+      }
+    };
   }, [currentWeek]);
 
   const navigateWeek = (direction: number) => {
+    // Prevent navigation while loading
+    if (isLoadingWeek) return;
+    
     const newWeek = currentWeek + direction;
     setCurrentWeek(newWeek);
   };
@@ -43,24 +72,25 @@ export default function HistoryScreen() {
         <View style={styles.weekSelector}>
           <Pressable
             onPress={() => navigateWeek(-1)}
+            disabled={isLoadingWeek}
             style={({ pressed }) => [
               styles.weekButton,
-              { opacity: pressed ? 0.7 : 1 },
+              { opacity: isLoadingWeek ? 0.3 : pressed ? 0.7 : 1 },
             ]}
           >
             <ChevronLeft size={20} color="#2196F3" />
           </Pressable>
           
           <Text style={styles.weekTitle}>
-            {getWeekTitle(currentWeek)}
+            {isLoadingWeek ? "Loading..." : getWeekTitle(currentWeek)}
           </Text>
           
           <Pressable
             onPress={() => navigateWeek(1)}
-            disabled={currentWeek >= 0}
+            disabled={currentWeek >= 0 || isLoadingWeek}
             style={({ pressed }) => [
               styles.weekButton,
-              { opacity: currentWeek >= 0 ? 0.3 : pressed ? 0.7 : 1 },
+              { opacity: (currentWeek >= 0 || isLoadingWeek) ? 0.3 : pressed ? 0.7 : 1 },
             ]}
           >
             <ChevronRight size={20} color="#2196F3" />
