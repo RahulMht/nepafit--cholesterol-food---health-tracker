@@ -48,7 +48,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: -80,
   },
   appName: {
     fontSize: 32,
