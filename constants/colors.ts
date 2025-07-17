@@ -47,6 +47,13 @@ export const Colors = {
   cholesterolModerate: "#FF9800",
   cholesterolHigh: "#F44336",
   
+  // Progress bar gradient colors
+  progressExcellent: "#4CAF50",    // Green - Excellent
+  progressGood: "#8BC34A",         // Light green - Good  
+  progressModerate: "#FFC107",     // Yellow - Moderate
+  progressCaution: "#FF9800",      // Orange - Caution
+  progressHigh: "#F44336",         // Red - High/Concerning
+  
   // Gradients
   primaryGradient: ["#4CAF50", "#2E7D32"],
   accentGradient: ["#FF6B35", "#FFC107"],
