@@ -381,7 +381,7 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
   }
 };
 
-// Real API function for daily summary - Updated to use webhook
+// Real API function for daily summary - FIXED to handle "output" wrapper
 const loadDailySummaryAPI = async (dayOffset: number = 0): Promise<Summary> => {
   try {
     const token = await storage.getItem("authToken");
@@ -421,8 +421,18 @@ const loadDailySummaryAPI = async (dayOffset: number = 0): Promise<Summary> => {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
-    console.log("Daily summary webhook response:", result);
+    const responseData = await response.json();
+    console.log("Daily summary webhook response:", responseData);
+    
+    // Handle the response format with "output" wrapper - FIXED
+    let result;
+    if (responseData && responseData.output) {
+      result = responseData.output;
+      console.log("Extracted data from output wrapper:", result);
+    } else {
+      result = responseData;
+      console.log("Using direct response data:", result);
+    }
     
     // Transform the response to match our Summary interface
     const summary: Summary = {
@@ -433,6 +443,7 @@ const loadDailySummaryAPI = async (dayOffset: number = 0): Promise<Summary> => {
       stale: false,
     };
     
+    console.log("Transformed summary:", summary);
     return summary;
   } catch (error) {
     console.error("Error calling daily summary webhook:", error);
