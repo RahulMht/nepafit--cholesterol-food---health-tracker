@@ -35,7 +35,7 @@ export const RecentMeals: React.FC<RecentMealsProps> = ({ meals }) => {
         contentContainerStyle={styles.mealsContainer}
       >
         {recentMeals.map((meal, index) => (
-          <Pressable key={`recent-meal-${index}-${meal.timestamp}-${meal.id || 'no-id'}`} style={styles.mealCard}>
+          <Pressable key={`recent-meal-${meal.id || `${meal.timestamp}-${index}`}`} style={styles.mealCard}>
             {meal.imageUrl ? (
               <Image source={{ uri: meal.imageUrl }} style={styles.mealImage} />
             ) : (

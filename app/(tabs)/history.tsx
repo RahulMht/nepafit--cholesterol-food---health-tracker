@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, View, Text, Pressable } from "react-native";
+import { StyleSheet, View, Text, Pressable, ScrollView } from "react-native";
 import { Stack } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
@@ -68,35 +68,35 @@ export default function HistoryScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ title: "History" }} />
 
-      <View style={styles.content}>
-        <View style={styles.weekSelector}>
-          <Pressable
-            onPress={() => navigateWeek(-1)}
-            disabled={isLoadingWeek}
-            style={({ pressed }) => [
-              styles.weekButton,
-              { opacity: isLoadingWeek ? 0.3 : pressed ? 0.7 : 1 },
-            ]}
-          >
-            <ChevronLeft size={20} color="#2196F3" />
-          </Pressable>
-          
-          <Text style={styles.weekTitle}>
-            {isLoadingWeek ? "Loading..." : getWeekTitle(currentWeek)}
-          </Text>
-          
-          <Pressable
-            onPress={() => navigateWeek(1)}
-            disabled={currentWeek >= 0 || isLoadingWeek}
-            style={({ pressed }) => [
-              styles.weekButton,
-              { opacity: (currentWeek >= 0 || isLoadingWeek) ? 0.3 : pressed ? 0.7 : 1 },
-            ]}
-          >
-            <ChevronRight size={20} color="#2196F3" />
-          </Pressable>
-        </View>
+      <View style={styles.weekSelector}>
+        <Pressable
+          onPress={() => navigateWeek(-1)}
+          disabled={isLoadingWeek}
+          style={({ pressed }) => [
+            styles.weekButton,
+            { opacity: isLoadingWeek ? 0.3 : pressed ? 0.7 : 1 },
+          ]}
+        >
+          <ChevronLeft size={20} color="#2196F3" />
+        </Pressable>
+        
+        <Text style={styles.weekTitle}>
+          {isLoadingWeek ? "Loading..." : getWeekTitle(currentWeek)}
+        </Text>
+        
+        <Pressable
+          onPress={() => navigateWeek(1)}
+          disabled={currentWeek >= 0 || isLoadingWeek}
+          style={({ pressed }) => [
+            styles.weekButton,
+            { opacity: (currentWeek >= 0 || isLoadingWeek) ? 0.3 : pressed ? 0.7 : 1 },
+          ]}
+        >
+          <ChevronRight size={20} color="#2196F3" />
+        </Pressable>
+      </View>
 
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
         <View style={styles.chartContainer}>
           <WeeklyBarChart data={weeklySummary.dailyCholesterol || []} />
         </View>
@@ -107,7 +107,7 @@ export default function HistoryScreen() {
             {weeklySummary.insight || "Track your meals consistently to get personalized heart health insights."}
           </Text>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -127,9 +127,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#757575",
   },
-  content: {
+  scrollContainer: {
     flex: 1,
-    paddingBottom: 16,
+  },
+  scrollContent: {
+    paddingBottom: 32,
   },
   weekSelector: {
     flexDirection: "row",
@@ -137,6 +139,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
+    backgroundColor: "#F5F5F5",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
   },
   weekButton: {
     padding: 8,
