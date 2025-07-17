@@ -92,7 +92,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.logoContainer}>
-          <AppLogo size={240} />
+          <AppLogo size={720} />
           <Text style={styles.appName}>NepaFit</Text>
           <Text style={styles.tagline}>Manage cholesterol with smart nutrition</Text>
         </View>
