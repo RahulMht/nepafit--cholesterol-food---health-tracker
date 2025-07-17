@@ -795,7 +795,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     }
   };
 
-  // Load weekly summary data from API with updated response schema
+  // Load weekly summary data from API - FIXED to handle "output" wrapper
   const loadWeeklySummaryData = async (weekOffset: number = 0) => {
     if (isOffline) {
       console.log("App is offline, using fallback weekly summary");
@@ -838,8 +838,18 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result = await response.json();
-      console.log("Weekly summary webhook response:", result);
+      const responseData = await response.json();
+      console.log("Weekly summary webhook response:", responseData);
+      
+      // Handle the response format with "output" wrapper - FIXED
+      let result;
+      if (responseData && responseData.output) {
+        result = responseData.output;
+        console.log("Extracted weekly data from output wrapper:", result);
+      } else {
+        result = responseData;
+        console.log("Using direct weekly response data:", result);
+      }
       
       // Handle the new response schema with dataAvailability
       const weeklySummary: WeeklySummary = {
@@ -858,6 +868,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         todayMeals: result.todayMeals || [],
       };
       
+      console.log("Transformed weekly summary:", weeklySummary);
       setWeeklySummary(weeklySummary);
     } catch (error) {
       console.error("Error loading weekly summary data:", error);
