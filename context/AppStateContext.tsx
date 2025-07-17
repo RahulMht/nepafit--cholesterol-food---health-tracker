@@ -181,16 +181,28 @@ const uploadImageToCloudinary = async (imageUri: string): Promise<string> => {
     
     // Upload to Cloudinary using signed upload with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => {
+      console.log("Cloudinary upload timed out after 60 seconds");
+      controller.abort();
+    }, 60000); // 60 second timeout
     
-    const uploadResponse = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal,
+    let uploadResponse;
+    try {
+      uploadResponse = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        }
+      );
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+        throw new Error('Image upload timed out after 60 seconds. Please try again.');
       }
-    );
+      throw fetchError;
+    }
     
     clearTimeout(timeoutId);
     console.log("Cloudinary response status:", uploadResponse.status);
@@ -255,16 +267,28 @@ const uploadImageToCloudinaryUnsigned = async (imageUri: string): Promise<string
   formData.append('timestamp', timestamp.toString());
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+  const timeoutId = setTimeout(() => {
+    console.log("Cloudinary unsigned upload timed out after 60 seconds");
+    controller.abort();
+  }, 60000); // 60 second timeout
   
-  const uploadResponse = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-    {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal,
+  let uploadResponse;
+  try {
+    uploadResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      }
+    );
+  } catch (fetchError) {
+    clearTimeout(timeoutId);
+    if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+      throw new Error('Image upload timed out after 60 seconds. Please try again.');
     }
-  );
+    throw fetchError;
+  }
   
   clearTimeout(timeoutId);
   
@@ -306,19 +330,31 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
     console.log("Sending request to webhook:", FOOD_INTAKE_WEBHOOK);
     console.log("Request payload:", requestPayload);
 
-    // Add timeout to prevent hanging - increased to 30 seconds
+    // Add timeout to prevent hanging - increased to 60 seconds
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => {
+      console.log("Food intake webhook request timed out after 60 seconds");
+      controller.abort();
+    }, 60000); // 60 second timeout
 
-    const response = await fetch(FOOD_INTAKE_WEBHOOK, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-      body: JSON.stringify(requestPayload),
-      signal: controller.signal,
-    });
+    let response;
+    try {
+      response = await fetch(FOOD_INTAKE_WEBHOOK, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify(requestPayload),
+        signal: controller.signal,
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+        throw new Error('Request timed out after 60 seconds. Please try again.');
+      }
+      throw fetchError;
+    }
 
     clearTimeout(timeoutId);
     console.log("Response status:", response.status);
@@ -375,19 +411,31 @@ const sendChatMessageAPI = async (message: string): Promise<{ text: string }> =>
     console.log("Sending chat message to webhook:", CHAT_WEBHOOK);
     console.log("Request payload:", requestPayload);
 
-    // Add timeout to prevent hanging - 30 seconds
+    // Add timeout to prevent hanging - 60 seconds
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => {
+      console.log("Chat webhook request timed out after 60 seconds");
+      controller.abort();
+    }, 60000); // 60 second timeout
 
-    const response = await fetch(CHAT_WEBHOOK, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-      body: JSON.stringify(requestPayload),
-      signal: controller.signal,
-    });
+    let response;
+    try {
+      response = await fetch(CHAT_WEBHOOK, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify(requestPayload),
+        signal: controller.signal,
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+        throw new Error('Request timed out after 60 seconds. Please try again.');
+      }
+      throw fetchError;
+    }
 
     clearTimeout(timeoutId);
     console.log("Chat response status:", response.status);
@@ -605,8 +653,14 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
   const cancelAllActiveRequests = () => {
     console.log("Cancelling all active requests");
     activeControllers.forEach((controller, weekOffset) => {
-      console.log(`Cancelling request for week ${weekOffset}`);
-      controller.abort();
+      try {
+        console.log(`Cancelling request for week ${weekOffset}`);
+        if (!controller.signal.aborted) {
+          controller.abort();
+        }
+      } catch (error) {
+        console.log(`Error cancelling request for week ${weekOffset}:`, error);
+      }
     });
     setActiveControllers(new Map());
     setActiveRequests(new Map());
@@ -650,6 +704,12 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     };
 
     initializeApp();
+    
+    // Cleanup function for component unmount
+    return () => {
+      console.log("AppStateContext unmounting, cancelling all active requests");
+      cancelAllActiveRequests();
+    };
   }, []);
 
   // Handle Google Auth Response - only on native platforms
@@ -831,16 +891,29 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
 
           const controller = new AbortController();
           setActiveControllers(prev => new Map(prev).set(weekOffset, controller));
-          const timeoutId = setTimeout(() => controller.abort(), 60000); // Increased to 60 seconds
+          const timeoutId = setTimeout(() => {
+            console.log(`Weekly summary request for week ${weekOffset} timed out after 60 seconds`);
+            controller.abort();
+          }, 60000); // Increased to 60 seconds
 
-          const response = await fetch(SUMMARY_WEBHOOK, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestPayload),
-            signal: controller.signal,
-          });
+          let response;
+          try {
+            response = await fetch(SUMMARY_WEBHOOK, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(requestPayload),
+              signal: controller.signal,
+            });
+          } catch (fetchError) {
+            clearTimeout(timeoutId);
+            if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+              console.log(`Weekly summary request for week ${weekOffset} was cancelled or timed out`);
+              return null;
+            }
+            throw fetchError;
+          }
 
           clearTimeout(timeoutId);
           console.log(`Weekly summary response status (attempt ${attempt + 1}):`, response.status);
@@ -913,8 +986,8 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
           
-          if (lastError.name === 'AbortError' || lastError.message.includes('Aborted')) {
-            console.log(`Request for week ${weekOffset} was cancelled`);
+          if (lastError.name === 'AbortError' || lastError.message.includes('Aborted') || lastError.message.includes('aborted')) {
+            console.log(`Request for week ${weekOffset} was cancelled or aborted`);
             return null;
           }
           
@@ -1254,9 +1327,23 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         return { success: true, meal: result.meal };
       } catch (error) {
         console.error("Error logging meal:", error);
+        
+        // Provide more specific error messages
+        let errorMessage = "Failed to log meal. Please check your connection and try again.";
+        
+        if (error instanceof Error) {
+          if (error.message.includes('timed out')) {
+            errorMessage = "Request timed out. Please try again with a better connection.";
+          } else if (error.message.includes('Network request failed') || error.message.includes('fetch')) {
+            errorMessage = "Network error. Please check your internet connection and try again.";
+          } else if (error.message.includes('AbortError') || error.message.includes('aborted')) {
+            errorMessage = "Request was cancelled. Please try again.";
+          }
+        }
+        
         return {
           success: false,
-          error: "Failed to log meal. Please check your connection and try again."
+          error: errorMessage
         };
       }
     }
@@ -1274,9 +1361,22 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         return await sendChatMessageAPI(message);
       } catch (error) {
         console.error("Error sending chat message:", error);
-        // Return fallback response on error
+        
+        // Provide more specific error messages
+        let errorMessage = "I'm having trouble responding right now. Please check your connection and try again later.";
+        
+        if (error instanceof Error) {
+          if (error.message.includes('timed out')) {
+            errorMessage = "My response timed out. Please try asking your question again.";
+          } else if (error.message.includes('Network request failed') || error.message.includes('fetch')) {
+            errorMessage = "I can't connect right now. Please check your internet connection and try again.";
+          } else if (error.message.includes('AbortError') || error.message.includes('aborted')) {
+            errorMessage = "Your request was cancelled. Please try asking again.";
+          }
+        }
+        
         return {
-          text: "I'm having trouble responding right now. Please check your connection and try again later.",
+          text: errorMessage,
         };
       }
     }
