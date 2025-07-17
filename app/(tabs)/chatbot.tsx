@@ -10,6 +10,8 @@ import {
   Platform,
   ActivityIndicator,
   Animated,
+  Keyboard,
+  Dimensions,
 } from "react-native";
 import { Stack } from "expo-router";
 import { Send, Heart, Sparkles } from "lucide-react-native";
@@ -34,8 +36,48 @@ export default function ChatbotScreen() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Keyboard event listeners
+  useEffect(() => {
+    const keyboardWillShow = (event: any) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    };
+
+    const keyboardWillHide = () => {
+      setKeyboardHeight(0);
+    };
+
+    const keyboardDidShow = (event: any) => {
+      setKeyboardHeight(event.endCoordinates.height);
+      // Scroll to bottom when keyboard shows
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    };
+
+    const keyboardDidHide = () => {
+      setKeyboardHeight(0);
+    };
+
+    let showListener: any;
+    let hideListener: any;
+
+    if (Platform.OS === 'ios') {
+      showListener = Keyboard.addListener('keyboardWillShow', keyboardWillShow);
+      hideListener = Keyboard.addListener('keyboardWillHide', keyboardWillHide);
+    } else {
+      showListener = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
+      hideListener = Keyboard.addListener('keyboardDidHide', keyboardDidHide);
+    }
+
+    return () => {
+      showListener?.remove();
+      hideListener?.remove();
+    };
+  }, []);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -164,11 +206,7 @@ export default function ChatbotScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-    >
+    <View style={styles.container}>
       <Stack.Screen 
         options={{ 
           title: "Heart Health Coach",
@@ -183,21 +221,27 @@ export default function ChatbotScreen() {
         }} 
       />
 
-      {messages.length <= 1 ? (
-        renderEmptyState()
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ChatMessage message={item} />}
-          contentContainerStyle={styles.messageList}
-          showsVerticalScrollIndicator={false}
-          ListFooterComponent={renderTypingIndicator}
-        />
-      )}
+      <View style={[styles.messagesContainer, { marginBottom: keyboardHeight }]}>
+        {messages.length <= 1 ? (
+          renderEmptyState()
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <ChatMessage message={item} />}
+            contentContainerStyle={styles.messageList}
+            showsVerticalScrollIndicator={false}
+            ListFooterComponent={renderTypingIndicator}
+          />
+        )}
+      </View>
 
-      <View style={styles.inputContainer}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "position" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <View style={styles.inputContainer}>
         {isOffline && (
           <View style={styles.offlineIndicator}>
             <Text style={styles.offlineText}>You're offline - messages will be sent when reconnected</Text>
@@ -216,6 +260,12 @@ export default function ChatbotScreen() {
             returnKeyType="send"
             onSubmitEditing={handleSend}
             editable={!isLoading}
+            onFocus={() => {
+              // Scroll to bottom when input is focused
+              setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+              }, 300);
+            }}
           />
           <Pressable
             style={({ pressed }) => [
@@ -236,11 +286,12 @@ export default function ChatbotScreen() {
           </Pressable>
         </View>
         
-        <Text style={styles.characterCount}>
-          {message.length}/500
-        </Text>
-      </View>
-    </KeyboardAvoidingView>
+          <Text style={styles.characterCount}>
+            {message.length}/500
+          </Text>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -248,6 +299,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  messagesContainer: {
+    flex: 1,
   },
   emptyState: {
     flex: 1,
