@@ -557,6 +557,8 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     insight: "Track your meals consistently to get personalized heart health insights.",
     todayMeals: [],
   });
+  // NEW: Cache for past 6 weeks of data
+  const [cachedWeeklyData, setCachedWeeklyData] = useState<Map<number, WeeklySummary>>(new Map());
   const [foodInfoPopup, setFoodInfoPopup] = useState<{ visible: boolean; meal: Meal | null }>({
     visible: false,
     meal: null,
@@ -611,6 +613,8 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         await checkAuthStatus();
         await loadStoredMeals();
         await loadUserProfile();
+        // Load past 6 weeks of data as backup
+        await preloadPastWeeksData();
       } catch (error) {
         console.error("Error initializing app:", error);
       } finally {
@@ -642,6 +646,8 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
       // Clear today's meals and reload data for the new day
       console.log("New day started - clearing today's meals");
       setTodayMeals([]);
+      // Refresh current week data since today's value is dynamic
+      loadWeeklySummaryData(0);
     }, msUntilMidnight);
 
     return () => clearTimeout(timeout);
@@ -693,30 +699,60 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     }
   };
 
-  // Load weekly summary data from API - FIXED to handle array response format
-  const loadWeeklySummaryData = async (weekOffset: number = 0) => {
+  // NEW: Preload past 6 weeks of data as backup
+  const preloadPastWeeksData = async () => {
     if (isOffline) {
-      console.log("App is offline, using fallback weekly summary");
-      setWeeklySummary(getFallbackWeeklySummary());
+      console.log("App is offline, skipping preload of past weeks data");
       return;
     }
 
     try {
-      // Get the target week's date range
+      console.log("Preloading past 6 weeks of data...");
+      const weeklyDataMap = new Map<number, WeeklySummary>();
+      
+      // Load past 6 weeks (weekOffset -1 to -6)
+      const loadPromises = [];
+      for (let weekOffset = -1; weekOffset >= -6; weekOffset--) {
+        loadPromises.push(
+          loadWeeklyDataFromAPI(weekOffset).then(data => {
+            if (data) {
+              weeklyDataMap.set(weekOffset, data);
+              console.log(`Cached data for week ${weekOffset}`);
+            }
+          }).catch(error => {
+            console.error(`Failed to load data for week ${weekOffset}:`, error);
+            // Set fallback data for failed weeks
+            weeklyDataMap.set(weekOffset, getFallbackWeeklySummary());
+          })
+        );
+      }
+      
+      // Wait for all weeks to load (with timeout)
+      await Promise.allSettled(loadPromises);
+      
+      setCachedWeeklyData(weeklyDataMap);
+      console.log("Preloaded data for", weeklyDataMap.size, "past weeks");
+      
+    } catch (error) {
+      console.error("Error preloading past weeks data:", error);
+    }
+  };
+
+  // NEW: Load weekly data from API (extracted from loadWeeklySummaryData)
+  const loadWeeklyDataFromAPI = async (weekOffset: number): Promise<WeeklySummary | null> => {
+    try {
       const { startDate, endDate } = getWeekDates(weekOffset);
       
       const requestPayload = {
         startDate,
         endDate,
-        type: "weekly" // Indicate this is a weekly summary request
+        type: "weekly"
       };
 
-      console.log("Fetching weekly summary from webhook:", SUMMARY_WEBHOOK);
-      console.log("Request payload:", requestPayload);
+      console.log(`Fetching weekly summary for week ${weekOffset} from webhook:`, SUMMARY_WEBHOOK);
 
-      // Add timeout to prevent hanging requests
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       const response = await fetch(SUMMARY_WEBHOOK, {
         method: 'POST',
@@ -728,45 +764,28 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
       });
 
       clearTimeout(timeoutId);
-      console.log("Weekly summary response status:", response.status);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Weekly summary webhook error response:", errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const responseData = await response.json();
-      console.log("Weekly summary webhook response:", responseData);
       
-      // Handle the response format - FIXED to handle array response
+      // Handle the response format
       let result;
-      
-      // Check if response is an array (new format)
       if (Array.isArray(responseData) && responseData.length > 0) {
-        // Get the first element from the array
         const firstElement = responseData[0];
-        console.log("Response is array, using first element:", firstElement);
-        
-        // Check if it has output wrapper
         if (firstElement && firstElement.output) {
           result = firstElement.output;
-          console.log("Extracted weekly data from array output wrapper:", result);
         } else {
           result = firstElement;
-          console.log("Using direct array element data:", result);
         }
       } else if (responseData && responseData.output) {
-        // Handle single object with output wrapper
         result = responseData.output;
-        console.log("Extracted weekly data from single output wrapper:", result);
       } else {
-        // Handle direct response
         result = responseData;
-        console.log("Using direct weekly response data:", result);
       }
       
-      // Handle the new response schema with dataAvailability
       const weeklySummary: WeeklySummary = {
         dailyCholesterol: result.dailyCholesterol || [
           { day: "Mon", value: 0 },
@@ -780,15 +799,72 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         insight: result.dataAvailability 
           ? (result.insight || "Track your meals consistently to get personalized heart health insights.")
           : "No data available for this time period. Start logging meals to see insights.",
-        todayMeals: result.todayMeals || [],
+        todayMeals: [], // Don't include todayMeals for past weeks
       };
       
-      console.log("Transformed weekly summary:", weeklySummary);
-      setWeeklySummary(weeklySummary);
+      return weeklySummary;
     } catch (error) {
-      console.error("Error loading weekly summary data:", error);
-      // Fall back to default data if API fails
-      setWeeklySummary(getFallbackWeeklySummary());
+      console.error(`Error loading weekly data for week ${weekOffset}:`, error);
+      return null;
+    }
+  };
+
+  // MODIFIED: Load weekly summary data - use cache for past weeks, API for current week
+  const loadWeeklySummaryData = async (weekOffset: number = 0) => {
+    console.log(`Loading weekly summary for week offset: ${weekOffset}`);
+    
+    // For current week (weekOffset = 0), always load from API since today's value is dynamic
+    if (weekOffset === 0) {
+      if (isOffline) {
+        console.log("App is offline, using fallback for current week");
+        setWeeklySummary(getFallbackWeeklySummary());
+        return;
+      }
+
+      try {
+        const currentWeekData = await loadWeeklyDataFromAPI(weekOffset);
+        if (currentWeekData) {
+          // For current week, include today's meals
+          const summaryWithTodayMeals = {
+            ...currentWeekData,
+            todayMeals: todayMeals
+          };
+          setWeeklySummary(summaryWithTodayMeals);
+          console.log("Loaded current week data from API");
+        } else {
+          setWeeklySummary(getFallbackWeeklySummary());
+        }
+      } catch (error) {
+        console.error("Error loading current week data:", error);
+        setWeeklySummary(getFallbackWeeklySummary());
+      }
+    } else {
+      // For past weeks, use cached data
+      const cachedData = cachedWeeklyData.get(weekOffset);
+      if (cachedData) {
+        setWeeklySummary(cachedData);
+        console.log(`Using cached data for week ${weekOffset}`);
+      } else {
+        // If not in cache, try to load from API as fallback
+        console.log(`No cached data for week ${weekOffset}, trying API...`);
+        if (!isOffline) {
+          try {
+            const weekData = await loadWeeklyDataFromAPI(weekOffset);
+            if (weekData) {
+              setWeeklySummary(weekData);
+              // Cache the newly loaded data
+              setCachedWeeklyData(prev => new Map(prev).set(weekOffset, weekData));
+            } else {
+              setWeeklySummary(getFallbackWeeklySummary());
+            }
+          } catch (error) {
+            console.error(`Error loading week ${weekOffset} data:`, error);
+            setWeeklySummary(getFallbackWeeklySummary());
+          }
+        } else {
+          setWeeklySummary(getFallbackWeeklySummary());
+        }
+      }
     }
   };
 
@@ -1023,6 +1099,9 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         
         // Show food info popup immediately
         showFoodInfoPopup(result.meal);
+        
+        // Refresh current week data since today's value changed
+        loadWeeklySummaryData(0);
         
         return { success: true, meal: result.meal };
       } catch (error) {
