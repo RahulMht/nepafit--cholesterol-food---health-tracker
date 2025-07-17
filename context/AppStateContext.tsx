@@ -13,10 +13,10 @@ if (Platform.OS !== 'web') {
   WebBrowser.maybeCompleteAuthSession();
 }
 
-// Production API Webhook URLs - Updated to production endpoints
+// Production API Webhook URLs - Updated chat webhook to production
 const FOOD_INTAKE_WEBHOOK = "https://foothaven.app.n8n.cloud/webhook/4f5c25b0-30cf-408c-83f9-a37266cc6788";
 const SUMMARY_WEBHOOK = "https://foothaven.app.n8n.cloud/webhook/0cf5a4d3-fe19-41be-9b5a-98e343742fd5";
-const CHAT_WEBHOOK = "https://foothaven.app.n8n.cloud/webhook-test/6f23d85e-3d50-4593-8521-3b561bc42b75";
+const CHAT_WEBHOOK = "https://foothaven.app.n8n.cloud/webhook/6f23d85e-3d50-4593-8521-3b561bc42b75";
 const LOGIN_WEBHOOK = "https://your-api.com/auth/login"; // Replace with your login webhook
 const REGISTER_WEBHOOK = "https://your-api.com/auth/register"; // Replace with your register webhook
 const GOOGLE_AUTH_WEBHOOK = "https://your-api.com/auth/google"; // Replace with your Google auth webhook
