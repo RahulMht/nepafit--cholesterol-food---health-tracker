@@ -86,25 +86,24 @@ const getTodayStart = (): Date => {
   return today;
 };
 
-// Helper function to get week start and end dates
+// Helper function to get week start and end dates (Sunday to Saturday)
 const getWeekDates = (weekOffset: number = 0): { startDate: string; endDate: string } => {
   const today = new Date();
-  const dayOfWeek = today.getDay();
-  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Handle Sunday as 0
-  
-  // Calculate the Monday of the target week
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + mondayOffset + (weekOffset * 7));
-  monday.setHours(0, 0, 0, 0);
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
   
   // Calculate the Sunday of the target week
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - dayOfWeek + (weekOffset * 7));
+  sunday.setHours(0, 0, 0, 0);
+  
+  // Calculate the Saturday of the target week
+  const saturday = new Date(sunday);
+  saturday.setDate(sunday.getDate() + 6);
+  saturday.setHours(23, 59, 59, 999);
   
   return {
-    startDate: monday.toISOString(),
-    endDate: sunday.toISOString()
+    startDate: sunday.toISOString(),
+    endDate: saturday.toISOString()
   };
 };
 
@@ -347,7 +346,7 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
       cholesterol: result.cholesterol || 0, // Use actual values from response
       fiber: result.fiber || 0, // Use actual values from response
       protein: result.protein || 0, // Use actual values from response
-      imageUrl: imageUrl ?? undefined, // Use the Cloudinary image URL
+      imageUrl: imageUrl || undefined, // Use the Cloudinary image URL
       timestamp: result.timestamp || new Date().toISOString(),
       status: "sent" as const,
     };
@@ -455,16 +454,16 @@ const calculateLocalSummary = (todayMeals: Meal[]): Summary => {
   };
 };
 
-// Fallback weekly summary data
+// Fallback weekly summary data (Sunday to Saturday)
 const getFallbackWeeklySummary = (): WeeklySummary => ({
   dailyCholesterol: [
+    { day: "Sun", value: 0 },
     { day: "Mon", value: 0 },
     { day: "Tue", value: 0 },
     { day: "Wed", value: 0 },
     { day: "Thu", value: 0 },
     { day: "Fri", value: 0 },
     { day: "Sat", value: 0 },
-    { day: "Sun", value: 0 },
   ],
   insight: "No data available for this time period. Start logging meals to see insights about your cholesterol intake and heart health.",
   todayMeals: [],
@@ -546,13 +545,13 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
   });
   const [weeklySummary, setWeeklySummary] = useState<WeeklySummary>({
     dailyCholesterol: [
+      { day: "Sun", value: 0 },
       { day: "Mon", value: 0 },
       { day: "Tue", value: 0 },
       { day: "Wed", value: 0 },
       { day: "Thu", value: 0 },
       { day: "Fri", value: 0 },
       { day: "Sat", value: 0 },
-      { day: "Sun", value: 0 },
     ],
     insight: "Track your meals consistently to get personalized heart health insights.",
     todayMeals: [],
@@ -832,7 +831,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
 
           const controller = new AbortController();
           setActiveControllers(prev => new Map(prev).set(weekOffset, controller));
-          const timeoutId = setTimeout(() => controller.abort(), 30000);
+          const timeoutId = setTimeout(() => controller.abort(), 60000); // Increased to 60 seconds
 
           const response = await fetch(SUMMARY_WEBHOOK, {
             method: 'POST',
@@ -891,13 +890,13 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
           
           const weeklySummary: WeeklySummary = {
             dailyCholesterol: result.dailyCholesterol || [
+              { day: "Sun", value: 0 },
               { day: "Mon", value: 0 },
               { day: "Tue", value: 0 },
               { day: "Wed", value: 0 },
               { day: "Thu", value: 0 },
               { day: "Fri", value: 0 },
               { day: "Sat", value: 0 },
-              { day: "Sun", value: 0 },
             ],
             insight: result.dataAvailability 
               ? (result.insight || "Track your meals consistently to get personalized heart health insights.")
@@ -1250,7 +1249,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         showFoodInfoPopup(result.meal);
         
         // Refresh current week data since today's value changed (only call API for current week)
-        loadWeeklySummaryData(0);
+        await loadWeeklySummaryData(0);
         
         return { success: true, meal: result.meal };
       } catch (error) {
