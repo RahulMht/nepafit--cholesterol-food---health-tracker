@@ -340,7 +340,9 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.log("Food intake webhook request timed out after 60 seconds");
-      controller.abort();
+      if (!controller.signal.aborted) {
+        controller.abort();
+      }
     }, 60000); // 60 second timeout
 
     let response;
@@ -356,7 +358,6 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
       });
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      console.error("Fetch error in logMealAPI:", fetchError);
       if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
         console.log("Food intake request was aborted:", fetchError.message);
         throw new Error('Request timed out after 60 seconds. Please try again.');
@@ -1270,7 +1271,6 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
 
   // Show food info popup
   const showFoodInfoPopup = (meal: Meal) => {
-    console.log("showFoodInfoPopup called with meal:", meal);
     setFoodInfoPopup({ visible: true, meal });
   };
 
@@ -1333,17 +1333,14 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         await saveMealsToStorage(updatedMeals);
         
         // Show food info popup immediately - this provides instant feedback to user
-        console.log("About to show food info popup for meal:", result.meal);
         showFoodInfoPopup(result.meal);
         
         // Update weekly cholesterol data in the background (non-blocking)
         // This runs asynchronously so the user sees the popup immediately
-        setTimeout(() => {
-          loadWeeklySummaryData(0).catch(error => {
-            console.error("Background weekly data update failed:", error);
-            // Don't show error to user since the meal was logged successfully
-          });
-        }, 100); // Small delay to ensure popup shows first
+        loadWeeklySummaryData(0).catch(error => {
+          console.error("Background weekly data update failed:", error);
+          // Don't show error to user since the meal was logged successfully
+        });
         
         return { success: true, meal: result.meal };
       } catch (error) {

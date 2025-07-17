@@ -30,25 +30,16 @@ export const MacroProgressBar: React.FC<MacroProgressBarProps> = ({
   // Determine color based on percentage and macro type
   const getColor = () => {
     if (name === "Saturated Fat" || name === "Cholesterol") {
-      // For cholesterol and saturated fat, lower is better - smooth gradient to red
-      if (percent < 25) return Colors.progressExcellent; // Green - Excellent
-      if (percent < 50) return Colors.progressGood; // Light green - Good
-      if (percent < 70) return Colors.progressModerate; // Yellow - Moderate
-      if (percent < 85) return Colors.progressCaution; // Orange - Caution
-      return Colors.progressHigh; // Red - High
-    } else if (name === "Fiber" || name === "Protein") {
-      // For fiber and protein, higher is generally better - don't turn red
-      if (percent < 50) return Colors.progressCaution; // Orange - Low (needs improvement)
-      if (percent < 75) return Colors.progressModerate; // Yellow - Moderate
-      if (percent < 100) return Colors.progressGood; // Light green - Good
-      return Colors.progressExcellent; // Green - Excellent (high fiber/protein is good)
+      // For cholesterol and saturated fat, lower is better
+      if (percent < 50) return Colors.success; // Green - Good
+      if (percent < 75) return Colors.warning; // Orange - Moderate
+      return Colors.error; // Red - High
     } else {
-      // For other macros, balanced approach
-      if (percent < 25) return Colors.progressCaution; // Orange - Too low
-      if (percent < 50) return Colors.progressModerate; // Yellow - Low
-      if (percent < 75) return Colors.progressGood; // Light green - Good
-      if (percent < 90) return Colors.progressExcellent; // Green - Optimal
-      return Colors.progressCaution; // Orange - Getting high
+      // For other macros, moderate levels are good
+      if (percent < 50) return Colors.success; // Green
+      if (percent < 75) return Colors.primary; // Primary green
+      if (percent < 90) return Colors.warning; // Orange
+      return Colors.error; // Red
     }
   };
 

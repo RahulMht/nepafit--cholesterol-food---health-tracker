@@ -24,8 +24,6 @@ export const FoodInfoPopup: React.FC<FoodInfoPopupProps> = ({
   meal,
   onClose,
 }) => {
-  console.log("FoodInfoPopup render - visible:", visible, "meal:", meal);
-  
   const handleClose = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -33,10 +31,7 @@ export const FoodInfoPopup: React.FC<FoodInfoPopupProps> = ({
     onClose();
   };
 
-  if (!meal) {
-    console.log("FoodInfoPopup: No meal data, returning null");
-    return null;
-  }
+  if (!meal) return null;
 
   return (
     <Modal
@@ -130,7 +125,7 @@ export const FoodInfoPopup: React.FC<FoodInfoPopupProps> = ({
           <View style={styles.footer}>
             <View style={styles.updateNotice}>
               <Text style={styles.updateNoticeText}>
-                📊 Your meal has been logged! Weekly insights are being updated in the background.
+                📊 Updating your weekly cholesterol insights...
               </Text>
             </View>
             <Pressable style={styles.continueButton} onPress={handleClose}>
