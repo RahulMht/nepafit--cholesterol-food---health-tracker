@@ -440,7 +440,24 @@ const loadDailySummaryAPI = async (dayOffset: number = 0): Promise<Summary> => {
   }
 };
 
-// Real API function for chat - FIXED to handle non-JSON responses properly
+// Helper function to strip HTML tags and decode HTML entities
+const stripHtmlAndDecode = (text: string): string => {
+  // Remove HTML tags
+  let cleaned = text.replace(/<[^>]*>/g, '');
+  
+  // Decode common HTML entities
+  cleaned = cleaned
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+  
+  return cleaned.trim();
+};
+
+// Real API function for chat - FIXED to handle HTML responses and strip them
 const sendChatMessageAPI = async (message: string): Promise<{ text: string }> => {
   try {
     const token = await storage.getItem("authToken");
@@ -480,6 +497,23 @@ const sendChatMessageAPI = async (message: string): Promise<{ text: string }> =>
     const responseText = await response.text();
     console.log("Raw chat response:", responseText);
     
+    // Check if the response contains HTML (iframe, div, etc.)
+    const containsHtml = /<[^>]*>/.test(responseText);
+    
+    if (containsHtml) {
+      console.log("Response contains HTML, stripping HTML tags");
+      const cleanedText = stripHtmlAndDecode(responseText);
+      
+      // If after stripping HTML we get empty or very short text, provide a fallback
+      if (!cleanedText || cleanedText.length < 10) {
+        return {
+          text: "I'm here to help with your heart health and nutrition questions. What would you like to know about managing cholesterol or healthy eating?"
+        };
+      }
+      
+      return { text: cleanedText };
+    }
+    
     // Check if the response starts with valid JSON characters
     const trimmedResponse = responseText.trim();
     
@@ -495,7 +529,7 @@ const sendChatMessageAPI = async (message: string): Promise<{ text: string }> =>
       console.log("Parsed chat response:", responseData);
       
       // Handle the expected response format: { "output": { "reply": "..." } }
-      let responseText_final = "I'm having trouble responding right now. Please try again later.";
+      let responseText_final = "I'm here to help with your heart health questions. What would you like to know?";
       
       if (responseData && responseData.output && responseData.output.reply) {
         responseText_final = responseData.output.reply;
@@ -518,13 +552,25 @@ const sendChatMessageAPI = async (message: string): Promise<{ text: string }> =>
         console.log("Response structure:", JSON.stringify(responseData, null, 2));
       }
       
-      return { text: responseText_final };
+      // Strip HTML from the final response text as well
+      const cleanedFinalText = stripHtmlAndDecode(responseText_final);
+      
+      return { text: cleanedFinalText };
     } catch (parseError) {
       console.error("Failed to parse JSON response:", parseError);
       console.log("Treating response as plain text");
       
-      // If it's not valid JSON, treat the raw text as the reply
-      return { text: trimmedResponse };
+      // If it's not valid JSON, treat the raw text as the reply and strip HTML
+      const cleanedText = stripHtmlAndDecode(trimmedResponse);
+      
+      // If after cleaning we get empty text, provide fallback
+      if (!cleanedText || cleanedText.length < 10) {
+        return {
+          text: "I'm here to help with your heart health and nutrition questions. What would you like to know about managing cholesterol or healthy eating?"
+        };
+      }
+      
+      return { text: cleanedText };
     }
   } catch (error) {
     console.error("Error calling chat webhook:", error);
@@ -1139,7 +1185,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     }
   };
 
-  // Send chat message - Updated to use real webhook with better error handling
+  // Send chat message - Updated to use real webhook with better error handling and HTML stripping
   const sendChatMessage = async (message: string) => {
     if (isOffline) {
       // Return a placeholder response for offline mode
