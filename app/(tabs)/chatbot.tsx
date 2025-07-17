@@ -18,6 +18,7 @@ import * as Haptics from "expo-haptics";
 import { ChatMessage } from "@/components/ChatMessage";
 import { useAppState } from "@/context/AppStateContext";
 import { Message } from "@/types";
+import { Colors } from "@/constants/colors";
 
 export default function ChatbotScreen() {
   const { isOffline, sendChatMessage } = useAppState();
@@ -146,8 +147,8 @@ export default function ChatbotScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.coachIcon}>
-        <Heart size={32} color="#2196F3" />
-        <Sparkles size={20} color="#4CAF50" style={styles.sparkleIcon} />
+        <Heart size={32} color={Colors.primary} />
+        <Sparkles size={20} color={Colors.accent} style={styles.sparkleIcon} />
       </View>
       <Text style={styles.emptyTitle}>Your Heart Health Coach</Text>
       <Text style={styles.emptySubtitle}>
@@ -172,11 +173,12 @@ export default function ChatbotScreen() {
         options={{ 
           title: "Heart Health Coach",
           headerStyle: {
-            backgroundColor: "#2196F3",
+            backgroundColor: Colors.primary,
           },
-          headerTintColor: "#FFFFFF",
+          headerTintColor: Colors.onPrimary,
           headerTitleStyle: {
             fontWeight: "600",
+            color: Colors.onPrimary,
           },
         }} 
       />
@@ -208,7 +210,7 @@ export default function ChatbotScreen() {
             value={message}
             onChangeText={setMessage}
             placeholder="Ask about heart-healthy foods..."
-            placeholderTextColor="#9E9E9E"
+            placeholderTextColor={Colors.gray500}
             multiline
             maxLength={500}
             returnKeyType="send"
@@ -220,16 +222,16 @@ export default function ChatbotScreen() {
               styles.sendButton,
               { 
                 opacity: pressed || !message.trim() || isLoading ? 0.7 : 1,
-                backgroundColor: message.trim() && !isLoading ? "#2196F3" : "#BDBDBD"
+                backgroundColor: message.trim() && !isLoading ? Colors.primary : Colors.gray400
               },
             ]}
             onPress={handleSend}
             disabled={!message.trim() || isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={Colors.onPrimary} />
             ) : (
-              <Send size={20} color="#FFFFFF" />
+              <Send size={20} color={Colors.onPrimary} />
             )}
           </Pressable>
         </View>
@@ -245,7 +247,7 @@ export default function ChatbotScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: Colors.background,
   },
   emptyState: {
     flex: 1,
@@ -265,19 +267,19 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#212121",
+    color: Colors.onBackground,
     marginBottom: 8,
     textAlign: "center",
   },
   emptySubtitle: {
     fontSize: 16,
-    color: "#757575",
+    color: Colors.gray600,
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 32,
   },
   suggestionContainer: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 20,
     width: "100%",
@@ -290,12 +292,12 @@ const styles = StyleSheet.create({
   suggestionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#2196F3",
+    color: Colors.primary,
     marginBottom: 12,
   },
   suggestionText: {
     fontSize: 14,
-    color: "#424242",
+    color: Colors.gray700,
     marginBottom: 8,
     lineHeight: 20,
   },
@@ -311,7 +313,7 @@ const styles = StyleSheet.create({
   },
   typingBubble: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.surface,
     borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -326,24 +328,24 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#BDBDBD",
+    backgroundColor: Colors.gray400,
     marginHorizontal: 2,
   },
   typingText: {
     fontSize: 12,
-    color: "#9E9E9E",
+    color: Colors.gray500,
     fontStyle: "italic",
   },
   inputContainer: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.surface,
     borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
+    borderTopColor: Colors.gray200,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 24 : 12,
   },
   offlineIndicator: {
-    backgroundColor: "#FFF3E0",
+    backgroundColor: Colors.warning + "20",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -351,7 +353,7 @@ const styles = StyleSheet.create({
   },
   offlineText: {
     fontSize: 12,
-    color: "#FF9800",
+    color: Colors.warning,
     textAlign: "center",
   },
   inputRow: {
@@ -360,7 +362,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: Colors.surfaceVariant,
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -368,6 +370,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: "transparent",
+    color: Colors.onSurface,
   },
   inputDisabled: {
     opacity: 0.7,
@@ -387,7 +390,7 @@ const styles = StyleSheet.create({
   },
   characterCount: {
     fontSize: 12,
-    color: "#9E9E9E",
+    color: Colors.gray500,
     textAlign: "right",
     marginTop: 4,
   },

@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, View, Text } from "react-native";
 import Svg, { Circle, G } from "react-native-svg";
 import { AlertCircle } from "lucide-react-native";
+import { Colors } from "@/constants/colors";
 
 interface CalorieRingProps {
   consumed: number;
@@ -23,10 +24,10 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
 
   // Determine color based on percentage
   const getColor = () => {
-    if (percent < 0.5) return "#4CAF50"; // Green
-    if (percent < 0.75) return "#2196F3"; // Blue
-    if (percent < 0.9) return "#FF9800"; // Orange
-    return "#F44336"; // Red
+    if (percent < 0.5) return Colors.success; // Green
+    if (percent < 0.75) return Colors.primary; // Primary green
+    if (percent < 0.9) return Colors.warning; // Orange
+    return Colors.error; // Red
   };
 
   const centerX = size / 2;
@@ -40,7 +41,7 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
             cx={centerX}
             cy={centerY}
             r={radius}
-            stroke="#E0E0E0"
+            stroke={Colors.gray200}
             strokeWidth={strokeWidth}
             fill="transparent"
             transform={`rotate(-90 ${centerX} ${centerY})`}
@@ -64,7 +65,7 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
         <Text style={styles.targetText}>of {target} kcal</Text>
         {isStale && (
           <View style={styles.staleIndicator}>
-            <AlertCircle size={16} color="#FF9800" />
+            <AlertCircle size={16} color={Colors.warning} />
             <Text style={styles.staleText}>Data may be outdated</Text>
           </View>
         )}
@@ -86,24 +87,24 @@ const styles = StyleSheet.create({
   calorieText: {
     fontSize: 36,
     fontWeight: "700" as const,
-    color: "#212121",
+    color: Colors.onBackground,
   },
   targetText: {
     fontSize: 16,
-    color: "#757575",
+    color: Colors.gray600,
   },
   staleIndicator: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 8,
-    backgroundColor: "rgba(255, 152, 0, 0.1)",
+    backgroundColor: Colors.warning + "20",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   staleText: {
     fontSize: 12,
-    color: "#FF9800",
+    color: Colors.warning,
     marginLeft: 4,
   },
 });

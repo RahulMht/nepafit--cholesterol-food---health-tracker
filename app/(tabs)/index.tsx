@@ -12,6 +12,7 @@ import { FoodInfoPopup } from "@/components/FoodInfoPopup";
 import { Sidebar } from "@/components/Sidebar";
 import { useAppState } from "@/context/AppStateContext";
 import { EmptyDashboard } from "@/components/EmptyDashboard";
+import { Colors } from "@/constants/colors";
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -54,6 +55,12 @@ export default function DashboardScreen() {
         <Stack.Screen
           options={{
             title: "Today's Heart Health",
+            headerStyle: {
+              backgroundColor: Colors.surface,
+            },
+            headerTitleStyle: {
+              color: Colors.onSurface,
+            },
           }}
         />
         <Text style={styles.loadingText}>Loading your dashboard...</Text>
@@ -66,6 +73,12 @@ export default function DashboardScreen() {
       <Stack.Screen
         options={{
           title: "Today's Heart Health",
+          headerStyle: {
+            backgroundColor: Colors.surface,
+          },
+          headerTitleStyle: {
+            color: Colors.onSurface,
+          },
         }}
       />
 
@@ -117,7 +130,7 @@ export default function DashboardScreen() {
         </ScrollView>
       )}
 
-      {/* Floating Menu Button - Alternative Method */}
+      {/* Floating Menu Button */}
       <Pressable
         style={styles.menuFab}
         onPress={handleShowSidebar}
@@ -127,7 +140,7 @@ export default function DashboardScreen() {
           }
         }}
       >
-        <Menu color="#fff" size={24} />
+        <Menu color={Colors.onPrimary} size={24} />
       </Pressable>
 
       {/* Add Meal FAB */}
@@ -140,7 +153,7 @@ export default function DashboardScreen() {
           }
         }}
       >
-        <Plus color="#fff" size={24} />
+        <Plus color={Colors.onPrimary} size={24} />
       </Pressable>
 
       <FoodInfoPopup
@@ -160,17 +173,17 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: Colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: Colors.background,
   },
   loadingText: {
     fontSize: 16,
-    color: "#757575",
+    color: Colors.gray600,
   },
   scrollView: {
     flex: 1,
@@ -194,7 +207,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#2196F3",
+    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
     elevation: 4,
@@ -211,7 +224,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#2196F3",
+    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
     elevation: 4,

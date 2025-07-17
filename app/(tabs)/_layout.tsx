@@ -2,6 +2,7 @@ import { Tabs } from "expo-router";
 import { LayoutAnimation, Platform, UIManager } from "react-native";
 import { BarChart2, MessageSquare, Home } from "lucide-react-native";
 import React, { useEffect } from "react";
+import { Colors } from "@/constants/colors";
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -17,20 +18,23 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#2196F3",
-        tabBarInactiveTintColor: "#757575",
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.gray500,
         tabBarStyle: {
+          backgroundColor: Colors.surface,
+          borderTopColor: Colors.gray200,
           elevation: 8,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
-          borderTopWidth: 0,
+          borderTopWidth: 1,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
         },
         headerStyle: {
+          backgroundColor: Colors.surface,
           elevation: 2,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
@@ -40,6 +44,7 @@ export default function TabLayout() {
         headerTitleStyle: {
           fontWeight: "600",
           fontSize: 18,
+          color: Colors.onSurface,
         },
       }}
     >

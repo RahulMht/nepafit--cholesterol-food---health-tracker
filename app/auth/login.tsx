@@ -16,6 +16,7 @@ import { Eye, EyeOff } from "lucide-react-native";
 
 import { useAppState } from "@/context/AppStateContext";
 import { AppLogo } from "@/components/AppLogo";
+import { Colors } from "@/constants/colors";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*\d).{8,}$/;
@@ -137,6 +138,7 @@ export default function LoginScreen() {
               value={email}
               onChangeText={setEmail}
               placeholder="Enter your email"
+              placeholderTextColor={Colors.gray500}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
@@ -157,6 +159,7 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter your password"
+                placeholderTextColor={Colors.gray500}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoComplete="password"
@@ -166,9 +169,9 @@ export default function LoginScreen() {
                 style={styles.eyeButton}
               >
                 {showPassword ? (
-                  <EyeOff size={20} color="#757575" />
+                  <EyeOff size={20} color={Colors.gray600} />
                 ) : (
-                  <Eye size={20} color="#757575" />
+                  <Eye size={20} color={Colors.gray600} />
                 )}
               </Pressable>
             </View>
@@ -206,7 +209,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.surface,
   },
   scrollContent: {
     flexGrow: 1,
@@ -220,30 +223,30 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#2196F3",
+    color: Colors.primary,
     marginBottom: 8,
     marginTop: 16,
   },
   tagline: {
     fontSize: 16,
-    color: "#757575",
+    color: Colors.gray600,
   },
   formContainer: {
     width: "100%",
   },
   errorText: {
-    color: "#F44336",
+    color: Colors.error,
     marginBottom: 16,
     textAlign: "center",
-    backgroundColor: "#FFEBEE",
+    backgroundColor: Colors.error + "15",
     padding: 12,
     borderRadius: 8,
   },
   offlineText: {
-    color: "#FF9800",
+    color: Colors.warning,
     marginBottom: 16,
     textAlign: "center",
-    backgroundColor: "#FFF3E0",
+    backgroundColor: Colors.warning + "15",
     padding: 12,
     borderRadius: 8,
   },
@@ -251,9 +254,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: Colors.gray300,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -272,7 +275,7 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#424242",
+    color: Colors.gray700,
   },
   divider: {
     flexDirection: "row",
@@ -282,12 +285,12 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: Colors.gray300,
   },
   dividerText: {
     marginHorizontal: 16,
     fontSize: 14,
-    color: "#757575",
+    color: Colors.gray600,
   },
   inputContainer: {
     marginBottom: 20,
@@ -296,23 +299,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     marginBottom: 8,
-    color: "#424242",
+    color: Colors.gray700,
   },
   input: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: Colors.surfaceVariant,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     borderWidth: 1,
     borderColor: "transparent",
+    color: Colors.onSurface,
   },
   inputError: {
-    borderColor: "#F44336",
+    borderColor: Colors.error,
   },
   passwordContainer: {
     flexDirection: "row",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: Colors.surfaceVariant,
     borderRadius: 12,
     alignItems: "center",
     borderWidth: 1,
@@ -323,17 +327,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    color: Colors.onSurface,
   },
   eyeButton: {
     padding: 12,
   },
   validationText: {
-    color: "#F44336",
+    color: Colors.error,
     fontSize: 12,
     marginTop: 4,
   },
   loginButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
@@ -345,12 +350,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   disabledButton: {
-    backgroundColor: "#BDBDBD",
+    backgroundColor: Colors.gray400,
     elevation: 0,
     shadowOpacity: 0,
   },
   loginButtonText: {
-    color: "#FFFFFF",
+    color: Colors.onPrimary,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -360,10 +365,10 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 14,
-    color: "#757575",
+    color: Colors.gray600,
   },
   registerHighlight: {
-    color: "#2196F3",
+    color: Colors.primary,
     fontWeight: "600",
   },
 });

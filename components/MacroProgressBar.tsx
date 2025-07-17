@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { StyleSheet, View, Text, Animated } from "react-native";
+import { Colors } from "@/constants/colors";
 
 interface MacroProgressBarProps {
   name: string;
@@ -30,15 +31,15 @@ export const MacroProgressBar: React.FC<MacroProgressBarProps> = ({
   const getColor = () => {
     if (name === "Saturated Fat" || name === "Cholesterol") {
       // For cholesterol and saturated fat, lower is better
-      if (percent < 50) return "#4CAF50"; // Green - Good
-      if (percent < 75) return "#FF9800"; // Orange - Moderate
-      return "#F44336"; // Red - High
+      if (percent < 50) return Colors.success; // Green - Good
+      if (percent < 75) return Colors.warning; // Orange - Moderate
+      return Colors.error; // Red - High
     } else {
       // For other macros, moderate levels are good
-      if (percent < 50) return "#4CAF50"; // Green
-      if (percent < 75) return "#2196F3"; // Blue
-      if (percent < 90) return "#FF9800"; // Orange
-      return "#F44336"; // Red
+      if (percent < 50) return Colors.success; // Green
+      if (percent < 75) return Colors.primary; // Primary green
+      if (percent < 90) return Colors.warning; // Orange
+      return Colors.error; // Red
     }
   };
 
@@ -84,20 +85,20 @@ const styles = StyleSheet.create({
   macroName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#424242",
+    color: Colors.gray700,
   },
   macroValue: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#424242",
+    color: Colors.gray700,
   },
   targetText: {
     fontWeight: "400",
-    color: "#757575",
+    color: Colors.gray600,
   },
   progressContainer: {
     height: 12,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: Colors.gray200,
     borderRadius: 6,
     overflow: "hidden",
     position: "relative",

@@ -29,7 +29,7 @@ const CLOUDINARY_API_SECRET = "eXUX0EsbhN9zIfchtZQixi2mcAk";
 // Google OAuth configuration - Fixed type handling
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || "your-google-client-id.apps.googleusercontent.com";
 
-// Pre-created users database - Updated with Rahul Mahatha
+// Pre-created users database - Updated with Rahul Mahatha (height converted to cm)
 const USERS_DATABASE = [
   {
     email: "test@example.com",
@@ -41,7 +41,7 @@ const USERS_DATABASE = [
     email: "rrmahatha@gmail.com",
     password: "pass1221",
     profile: { name: "Rahul Mahatha", email: "rrmahatha@gmail.com" },
-    userProfile: { age: 24, weight: 65, height: 174, gender: "Male" }
+    userProfile: { age: 24, weight: 65, height: 174, gender: "Male" } // 5.7 feet = 174 cm
   }
 ];
 
@@ -440,7 +440,7 @@ const loadDailySummaryAPI = async (dayOffset: number = 0): Promise<Summary> => {
   }
 };
 
-// Real API function for chat - FIXED to handle response format properly with better error handling
+// Real API function for chat - FIXED to handle non-JSON responses properly
 const sendChatMessageAPI = async (message: string): Promise<{ text: string }> => {
   try {
     const token = await storage.getItem("authToken");
@@ -480,24 +480,23 @@ const sendChatMessageAPI = async (message: string): Promise<{ text: string }> =>
     const responseText = await response.text();
     console.log("Raw chat response:", responseText);
     
-    let responseData;
-    try {
-      // Try to parse as JSON
-      responseData = JSON.parse(responseText);
-      console.log("Parsed chat response:", responseData);
-    } catch (parseError) {
-      console.error("Failed to parse JSON response:", parseError);
-      console.log("Response was not valid JSON, treating as plain text");
-      
-      // If it's not JSON, treat the raw text as the reply
-      return { text: responseText };
+    // Check if the response starts with valid JSON characters
+    const trimmedResponse = responseText.trim();
+    
+    // If it doesn't start with { or [, treat it as plain text
+    if (!trimmedResponse.startsWith('{') && !trimmedResponse.startsWith('[')) {
+      console.log("Response is plain text, using directly");
+      return { text: trimmedResponse };
     }
     
-    // Handle the expected response format: { "output": { "reply": "..." } }
-    let responseText_final = "I'm having trouble responding right now. Please try again later.";
-    
+    // Try to parse as JSON
     try {
-      // Check if responseData has the expected structure
+      const responseData = JSON.parse(responseText);
+      console.log("Parsed chat response:", responseData);
+      
+      // Handle the expected response format: { "output": { "reply": "..." } }
+      let responseText_final = "I'm having trouble responding right now. Please try again later.";
+      
       if (responseData && responseData.output && responseData.output.reply) {
         responseText_final = responseData.output.reply;
         console.log("Extracted reply from response:", responseText_final);
@@ -518,12 +517,15 @@ const sendChatMessageAPI = async (message: string): Promise<{ text: string }> =>
         console.error("Unexpected response format:", responseData);
         console.log("Response structure:", JSON.stringify(responseData, null, 2));
       }
+      
+      return { text: responseText_final };
     } catch (parseError) {
-      console.error("Error parsing chat response:", parseError);
-      // Use fallback response
+      console.error("Failed to parse JSON response:", parseError);
+      console.log("Treating response as plain text");
+      
+      // If it's not valid JSON, treat the raw text as the reply
+      return { text: trimmedResponse };
     }
-    
-    return { text: responseText_final };
   } catch (error) {
     console.error("Error calling chat webhook:", error);
     throw error;
