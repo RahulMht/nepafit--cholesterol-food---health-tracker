@@ -4,10 +4,35 @@ import { Clock, AlertTriangle, CheckCircle, Copy } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import { Message } from "@/types";
+import { Colors } from "@/constants/colors";
 
 interface ChatMessageProps {
   message: Message;
 }
+
+// Helper function to parse markdown-style bold text
+const parseMessageText = (text: string, isUser: boolean) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      // Remove the ** markers and make it bold
+      const boldText = part.slice(2, -2);
+      return (
+        <Text 
+          key={index} 
+          style={[
+            styles.boldText,
+            isUser ? styles.userBoldText : styles.assistantBoldText
+          ]}
+        >
+          {boldText}
+        </Text>
+      );
+    }
+    return part;
+  });
+};
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.sender === "user";
@@ -22,13 +47,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   
   const renderStatusIcon = () => {
     if (message.status === "sending") {
-      return <Clock size={12} color="#9E9E9E" />;
+      return <Clock size={12} color={Colors.gray500} />;
     } else if (message.status === "failed") {
-      return <AlertTriangle size={12} color="#F44336" />;
+      return <AlertTriangle size={12} color={Colors.error} />;
     } else if (message.status === "queued") {
-      return <Clock size={12} color="#FF9800" />;
+      return <Clock size={12} color={Colors.warning} />;
     } else if (message.status === "sent" && isUser) {
-      return <CheckCircle size={12} color="#4CAF50" />;
+      return <CheckCircle size={12} color={Colors.success} />;
     }
     return null;
   };
@@ -46,12 +71,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         delayLongPress={500}
       >
         <Text style={[styles.messageText, isUser ? styles.userText : styles.assistantText]}>
-          {message.text}
+          {parseMessageText(message.text, isUser)}
         </Text>
         
         {!isUser && (
           <Pressable style={styles.copyButton} onPress={handleCopyMessage}>
-            <Copy size={14} color="#9E9E9E" />
+            <Copy size={14} color={Colors.gray500} />
           </Pressable>
         )}
       </Pressable>
@@ -98,24 +123,33 @@ const styles = StyleSheet.create({
     shadowRadius: 1,
   },
   userBubble: {
-    backgroundColor: "#2196F3",
+    backgroundColor: Colors.primary,
     borderBottomRightRadius: 6,
   },
   assistantBubble: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.surface,
     borderBottomLeftRadius: 6,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: Colors.gray200,
   },
   messageText: {
     fontSize: 16,
     lineHeight: 22,
   },
   userText: {
-    color: "#FFFFFF",
+    color: Colors.onPrimary,
   },
   assistantText: {
-    color: "#212121",
+    color: Colors.onSurface,
+  },
+  boldText: {
+    fontWeight: "700",
+  },
+  userBoldText: {
+    color: Colors.onPrimary,
+  },
+  assistantBoldText: {
+    color: Colors.primary,
   },
   copyButton: {
     position: "absolute",
@@ -137,7 +171,7 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 11,
-    color: "#9E9E9E",
+    color: Colors.gray500,
     marginRight: 6,
   },
   statusContainer: {
@@ -146,17 +180,17 @@ const styles = StyleSheet.create({
   },
   queuedText: {
     fontSize: 10,
-    color: "#FF9800",
+    color: Colors.warning,
     marginLeft: 4,
   },
   failedText: {
     fontSize: 10,
-    color: "#F44336",
+    color: Colors.error,
     marginLeft: 4,
   },
   sendingText: {
     fontSize: 10,
-    color: "#9E9E9E",
+    color: Colors.gray500,
     marginLeft: 4,
   },
 });
