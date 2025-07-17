@@ -183,7 +183,9 @@ const uploadImageToCloudinary = async (imageUri: string): Promise<string> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.log("Cloudinary upload timed out after 60 seconds");
-      controller.abort();
+      if (!controller.signal.aborted) {
+        controller.abort();
+      }
     }, 60000); // 60 second timeout
     
     let uploadResponse;
@@ -199,6 +201,7 @@ const uploadImageToCloudinary = async (imageUri: string): Promise<string> => {
     } catch (fetchError) {
       clearTimeout(timeoutId);
       if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+        console.log("Cloudinary upload was aborted:", fetchError.message);
         throw new Error('Image upload timed out after 60 seconds. Please try again.');
       }
       throw fetchError;
@@ -269,7 +272,9 @@ const uploadImageToCloudinaryUnsigned = async (imageUri: string): Promise<string
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     console.log("Cloudinary unsigned upload timed out after 60 seconds");
-    controller.abort();
+    if (!controller.signal.aborted) {
+      controller.abort();
+    }
   }, 60000); // 60 second timeout
   
   let uploadResponse;
@@ -285,6 +290,7 @@ const uploadImageToCloudinaryUnsigned = async (imageUri: string): Promise<string
   } catch (fetchError) {
     clearTimeout(timeoutId);
     if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+      console.log("Cloudinary unsigned upload was aborted:", fetchError.message);
       throw new Error('Image upload timed out after 60 seconds. Please try again.');
     }
     throw fetchError;
@@ -334,7 +340,9 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.log("Food intake webhook request timed out after 60 seconds");
-      controller.abort();
+      if (!controller.signal.aborted) {
+        controller.abort();
+      }
     }, 60000); // 60 second timeout
 
     let response;
@@ -351,6 +359,7 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
     } catch (fetchError) {
       clearTimeout(timeoutId);
       if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+        console.log("Food intake request was aborted:", fetchError.message);
         throw new Error('Request timed out after 60 seconds. Please try again.');
       }
       throw fetchError;
@@ -415,7 +424,9 @@ const sendChatMessageAPI = async (message: string): Promise<{ text: string }> =>
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.log("Chat webhook request timed out after 60 seconds");
-      controller.abort();
+      if (!controller.signal.aborted) {
+        controller.abort();
+      }
     }, 60000); // 60 second timeout
 
     let response;
@@ -432,6 +443,7 @@ const sendChatMessageAPI = async (message: string): Promise<{ text: string }> =>
     } catch (fetchError) {
       clearTimeout(timeoutId);
       if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+        console.log("Chat request was aborted:", fetchError.message);
         throw new Error('Request timed out after 60 seconds. Please try again.');
       }
       throw fetchError;
@@ -895,7 +907,9 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
           setActiveControllers(prev => new Map(prev).set(weekOffset, controller));
           const timeoutId = setTimeout(() => {
             console.log(`Weekly summary request for week ${weekOffset} timed out after 60 seconds`);
-            controller.abort();
+            if (!controller.signal.aborted) {
+              controller.abort();
+            }
           }, 60000); // Increased to 60 seconds
 
           let response;
@@ -911,7 +925,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
           } catch (fetchError) {
             clearTimeout(timeoutId);
             if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
-              console.log(`Weekly summary request for week ${weekOffset} was cancelled or timed out`);
+              console.log(`Weekly summary request for week ${weekOffset} was cancelled or timed out:`, fetchError.message);
               return null;
             }
             throw fetchError;
@@ -1318,12 +1332,15 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         setAllMeals(updatedMeals);
         await saveMealsToStorage(updatedMeals);
         
-        // Show food info popup immediately
+        // Show food info popup immediately - this provides instant feedback to user
         showFoodInfoPopup(result.meal);
         
-        // Refresh current week data since today's value changed (only call API for current week)
-        // This is the ONLY time we should refresh weekly data after initialization
-        await loadWeeklySummaryData(0);
+        // Update weekly cholesterol data in the background (non-blocking)
+        // This runs asynchronously so the user sees the popup immediately
+        loadWeeklySummaryData(0).catch(error => {
+          console.error("Background weekly data update failed:", error);
+          // Don't show error to user since the meal was logged successfully
+        });
         
         return { success: true, meal: result.meal };
       } catch (error) {

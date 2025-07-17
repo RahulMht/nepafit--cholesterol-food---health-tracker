@@ -123,6 +123,11 @@ export const FoodInfoPopup: React.FC<FoodInfoPopupProps> = ({
           </ScrollView>
 
           <View style={styles.footer}>
+            <View style={styles.updateNotice}>
+              <Text style={styles.updateNoticeText}>
+                📊 Updating your weekly cholesterol insights...
+              </Text>
+            </View>
             <Pressable style={styles.continueButton} onPress={handleClose}>
               <Text style={styles.continueButtonText}>Continue Tracking</Text>
             </Pressable>
@@ -249,6 +254,18 @@ const styles = StyleSheet.create({
   footer: {
     padding: 16,
     paddingTop: 8,
+  },
+  updateNotice: {
+    backgroundColor: "#E3F2FD",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    alignItems: "center",
+  },
+  updateNoticeText: {
+    fontSize: 13,
+    color: "#1976D2",
+    fontWeight: "500",
   },
   continueButton: {
     backgroundColor: "#2196F3",
