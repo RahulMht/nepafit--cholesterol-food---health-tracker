@@ -22,7 +22,7 @@ export const DailyMealsList: React.FC<DailyMealsListProps> = ({ meals }) => {
   };
 
   const renderMealItem = (item: Meal, index: number) => (
-    <View key={item.id || `daily-meal-${index}-${item.timestamp}`} style={styles.mealItem}>
+    <View key={`daily-meal-${index}-${item.timestamp}-${item.id || 'no-id'}`} style={styles.mealItem}>
       {item.imageUrl ? (
         <Image source={{ uri: item.imageUrl }} style={styles.mealImage} />
       ) : (
