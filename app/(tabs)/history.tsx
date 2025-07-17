@@ -12,26 +12,23 @@ export default function HistoryScreen() {
   const [isLoadingWeek, setIsLoadingWeek] = useState(false);
   const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load data when week changes - only for current week or from cache for past weeks
+  // Load data when week changes - only for current week, use cache for past weeks
   useEffect(() => {
     // Clear any existing timeout
     if (loadTimeoutRef.current) {
       clearTimeout(loadTimeoutRef.current);
     }
 
-    // Set loading state
-    setIsLoadingWeek(true);
+    // Set loading state only for current week
+    if (currentWeek === 0) {
+      setIsLoadingWeek(true);
+    }
 
     // Debounce the load request
     loadTimeoutRef.current = setTimeout(async () => {
       try {
-        // Only call API for current week (0), use cache for past weeks
-        if (currentWeek === 0) {
-          await loadWeeklySummaryData(currentWeek);
-        } else {
-          // For past weeks, just get from cache without API call
-          await loadWeeklySummaryData(currentWeek);
-        }
+        // Load data (API for current week, cache for past weeks)
+        await loadWeeklySummaryData(currentWeek);
       } catch (error) {
         console.error("Error loading weekly data:", error);
       } finally {

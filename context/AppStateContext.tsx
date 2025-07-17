@@ -694,8 +694,10 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         await loadUserProfile();
         // Load current week data first
         await loadWeeklySummaryData(0);
-        // Load past 6 weeks of data as backup
-        await preloadPastWeeksData();
+        // Load past 6 weeks of data as backup (in background, don't wait)
+        preloadPastWeeksData().catch(error => {
+          console.error("Background preload failed:", error);
+        });
       } catch (error) {
         console.error("Error initializing app:", error);
       } finally {
@@ -733,7 +735,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
       // Clear today's meals and reload data for the new day
       console.log("New day started - clearing today's meals");
       setTodayMeals([]);
-      // Refresh current week data since today's value is dynamic
+      // Refresh current week data since today's value is dynamic (new day)
       loadWeeklySummaryData(0);
     }, msUntilMidnight);
 
@@ -1024,6 +1026,22 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     return requestPromise;
   };
 
+  // Helper function to filter out future days from current week data
+  const filterCurrentWeekData = (dailyCholesterol: { day: string; value: number }[]): { day: string; value: number }[] => {
+    const today = new Date();
+    const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    const dayOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    
+    return dailyCholesterol.map((item, index) => {
+      // If this day hasn't occurred yet this week, set value to 0
+      if (index > currentDayOfWeek) {
+        return { ...item, value: 0 };
+      }
+      return item;
+    });
+  };
+
   // MODIFIED: Load weekly summary data - use cache for past weeks, API for current week with better error handling
   const loadWeeklySummaryData = async (weekOffset: number = 0) => {
     console.log(`Loading weekly summary for week offset: ${weekOffset}`);
@@ -1039,13 +1057,15 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
       try {
         const currentWeekData = await loadWeeklyDataFromAPI(weekOffset);
         if (currentWeekData) {
-          // For current week, include today's meals
+          // For current week, filter out future days and include today's meals
+          const filteredData = filterCurrentWeekData(currentWeekData.dailyCholesterol);
           const summaryWithTodayMeals = {
             ...currentWeekData,
+            dailyCholesterol: filteredData,
             todayMeals: todayMeals
           };
           setWeeklySummary(summaryWithTodayMeals);
-          console.log("Loaded current week data from API");
+          console.log("Loaded current week data from API with future days filtered");
         } else {
           console.log("No data returned for current week, using fallback");
           setWeeklySummary(getFallbackWeeklySummary());
@@ -1302,6 +1322,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         showFoodInfoPopup(result.meal);
         
         // Refresh current week data since today's value changed (only call API for current week)
+        // This is the ONLY time we should refresh weekly data after initialization
         await loadWeeklySummaryData(0);
         
         return { success: true, meal: result.meal };
