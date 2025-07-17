@@ -21,13 +21,13 @@ export const DailyMealsList: React.FC<DailyMealsListProps> = ({ meals }) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const renderMealItem = (item: Meal) => (
-    <View key={item.id} style={styles.mealItem}>
+  const renderMealItem = (item: Meal, index: number) => (
+    <View key={item.id || `daily-meal-${index}-${item.timestamp}`} style={styles.mealItem}>
       {item.imageUrl ? (
         <Image source={{ uri: item.imageUrl }} style={styles.mealImage} />
       ) : (
         <View style={[styles.mealImage, styles.placeholderImage]}>
-          <Text style={styles.placeholderText}>{item.description[0]}</Text>
+          <Text style={styles.placeholderText}>{item.description[0] || 'F'}</Text>
         </View>
       )}
       

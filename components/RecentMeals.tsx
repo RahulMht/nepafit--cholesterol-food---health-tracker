@@ -34,13 +34,13 @@ export const RecentMeals: React.FC<RecentMealsProps> = ({ meals }) => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.mealsContainer}
       >
-        {recentMeals.map((meal) => (
-          <Pressable key={meal.id} style={styles.mealCard}>
+        {recentMeals.map((meal, index) => (
+          <Pressable key={meal.id || `meal-${index}-${meal.timestamp}`} style={styles.mealCard}>
             {meal.imageUrl ? (
               <Image source={{ uri: meal.imageUrl }} style={styles.mealImage} />
             ) : (
               <View style={[styles.mealImage, styles.placeholderImage]}>
-                <Text style={styles.placeholderText}>{meal.description[0]}</Text>
+                <Text style={styles.placeholderText}>{meal.description[0] || 'F'}</Text>
               </View>
             )}
             <View style={styles.mealInfo}>
