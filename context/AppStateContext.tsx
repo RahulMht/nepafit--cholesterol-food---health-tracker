@@ -693,7 +693,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     }
   };
 
-  // Load weekly summary data from API - FIXED to handle "output" wrapper
+  // Load weekly summary data from API - IMPROVED with retry logic and better error handling
   const loadWeeklySummaryData = async (weekOffset: number = 0) => {
     if (isOffline) {
       console.log("App is offline, using fallback weekly summary");
@@ -701,78 +701,95 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
       return;
     }
 
-    try {
-      // Get the target week's date range
-      const { startDate, endDate } = getWeekDates(weekOffset);
-      
-      const requestPayload = {
-        startDate,
-        endDate,
-        type: "weekly" // Indicate this is a weekly summary request
-      };
+    const maxRetries = 2;
+    let retryCount = 0;
 
-      console.log("Fetching weekly summary from webhook:", SUMMARY_WEBHOOK);
-      console.log("Request payload:", requestPayload);
+    while (retryCount <= maxRetries) {
+      try {
+        // Get the target week's date range
+        const { startDate, endDate } = getWeekDates(weekOffset);
+        
+        const requestPayload = {
+          startDate,
+          endDate,
+          type: "weekly" // Indicate this is a weekly summary request
+        };
 
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        console.log(`Fetching weekly summary from webhook (attempt ${retryCount + 1}):`, SUMMARY_WEBHOOK);
+        console.log("Request payload:", requestPayload);
 
-      const response = await fetch(SUMMARY_WEBHOOK, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestPayload),
-        signal: controller.signal,
-      });
+        // Increase timeout to 60 seconds for weekly summary
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
-      clearTimeout(timeoutId);
-      console.log("Weekly summary response status:", response.status);
+        const response = await fetch(SUMMARY_WEBHOOK, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestPayload),
+          signal: controller.signal,
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Weekly summary webhook error response:", errorText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        clearTimeout(timeoutId);
+        console.log("Weekly summary response status:", response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Weekly summary webhook error response:", errorText);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseData = await response.json();
+        console.log("Weekly summary webhook response:", responseData);
+        
+        // Handle the response format with "output" wrapper - FIXED
+        let result;
+        if (responseData && responseData.output) {
+          result = responseData.output;
+          console.log("Extracted weekly data from output wrapper:", result);
+        } else {
+          result = responseData;
+          console.log("Using direct weekly response data:", result);
+        }
+        
+        // Handle the new response schema with dataAvailability
+        const weeklySummary: WeeklySummary = {
+          dailyCholesterol: result.dailyCholesterol || [
+            { day: "Mon", value: 0 },
+            { day: "Tue", value: 0 },
+            { day: "Wed", value: 0 },
+            { day: "Thu", value: 0 },
+            { day: "Fri", value: 0 },
+            { day: "Sat", value: 0 },
+            { day: "Sun", value: 0 },
+          ],
+          insight: result.dataAvailability 
+            ? (result.insight || "Track your meals consistently to get personalized heart health insights.")
+            : "No data available for this time period. Start logging meals to see insights.",
+          todayMeals: result.todayMeals || [],
+        };
+        
+        console.log("Transformed weekly summary:", weeklySummary);
+        setWeeklySummary(weeklySummary);
+        return; // Success, exit retry loop
+        
+      } catch (error) {
+        console.error(`Error loading weekly summary data (attempt ${retryCount + 1}):`, error);
+        retryCount++;
+        
+        if (retryCount <= maxRetries) {
+          // Wait before retrying (exponential backoff)
+          const waitTime = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
+          console.log(`Retrying in ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
       }
-
-      const responseData = await response.json();
-      console.log("Weekly summary webhook response:", responseData);
-      
-      // Handle the response format with "output" wrapper - FIXED
-      let result;
-      if (responseData && responseData.output) {
-        result = responseData.output;
-        console.log("Extracted weekly data from output wrapper:", result);
-      } else {
-        result = responseData;
-        console.log("Using direct weekly response data:", result);
-      }
-      
-      // Handle the new response schema with dataAvailability
-      const weeklySummary: WeeklySummary = {
-        dailyCholesterol: result.dailyCholesterol || [
-          { day: "Mon", value: 0 },
-          { day: "Tue", value: 0 },
-          { day: "Wed", value: 0 },
-          { day: "Thu", value: 0 },
-          { day: "Fri", value: 0 },
-          { day: "Sat", value: 0 },
-          { day: "Sun", value: 0 },
-        ],
-        insight: result.dataAvailability 
-          ? (result.insight || "Track your meals consistently to get personalized heart health insights.")
-          : "No data available for this time period. Start logging meals to see insights.",
-        todayMeals: result.todayMeals || [],
-      };
-      
-      console.log("Transformed weekly summary:", weeklySummary);
-      setWeeklySummary(weeklySummary);
-    } catch (error) {
-      console.error("Error loading weekly summary data:", error);
-      // Fall back to default data if API fails
-      setWeeklySummary(getFallbackWeeklySummary());
     }
+    
+    // All retries failed, use fallback
+    console.log("All retry attempts failed, using fallback weekly summary");
+    setWeeklySummary(getFallbackWeeklySummary());
   };
 
   // Save meals to storage
