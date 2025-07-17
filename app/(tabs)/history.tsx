@@ -131,7 +131,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 100,
+    flexGrow: 1,
   },
   weekSelector: {
     flexDirection: "row",

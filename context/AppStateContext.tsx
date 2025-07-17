@@ -347,7 +347,7 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
       cholesterol: result.cholesterol || 0, // Use actual values from response
       fiber: result.fiber || 0, // Use actual values from response
       protein: result.protein || 0, // Use actual values from response
-      imageUrl: imageUrl || undefined, // Use the Cloudinary image URL
+      imageUrl: imageUrl ?? undefined, // Use the Cloudinary image URL
       timestamp: result.timestamp || new Date().toISOString(),
       status: "sent" as const,
     };
@@ -778,7 +778,17 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     const existingRequest = activeRequests.get(weekOffset);
     if (existingRequest) {
       console.log(`Reusing existing request for week ${weekOffset}`);
-      return existingRequest;
+      try {
+        return await existingRequest;
+      } catch (error) {
+        // If the existing request failed, continue with a new request
+        console.log(`Existing request for week ${weekOffset} failed, creating new request`);
+        setActiveRequests(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(weekOffset);
+          return newMap;
+        });
+      }
     }
 
     // Rate limiting: prevent requests for the same week within 1 second
@@ -904,7 +914,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
           
-          if (lastError.name === 'AbortError') {
+          if (lastError.name === 'AbortError' || lastError.message.includes('Aborted')) {
             console.log(`Request for week ${weekOffset} was cancelled`);
             return null;
           }
@@ -924,6 +934,20 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
 
     // Store the request promise
     setActiveRequests(prev => new Map(prev).set(weekOffset, requestPromise));
+
+    // Clean up after request completes
+    requestPromise.finally(() => {
+      setActiveRequests(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(weekOffset);
+        return newMap;
+      });
+      setActiveControllers(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(weekOffset);
+        return newMap;
+      });
+    });
 
     return requestPromise;
   };

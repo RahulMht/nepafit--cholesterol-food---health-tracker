@@ -100,12 +100,14 @@ export default function DashboardScreen() {
 
           <View style={styles.macrosContainer}>
             <MacroProgressBar
+              key="saturated-fat"
               name="Saturated Fat"
               grams={summary.achieved?.saturatedFat || 0}
               target={summary.targets?.saturatedFat || 20}
               percent={summary.percent_of_target?.saturatedFat || 0}
             />
             <MacroProgressBar
+              key="cholesterol"
               name="Cholesterol"
               grams={summary.achieved?.cholesterol || 0}
               target={summary.targets?.cholesterol || 200}
@@ -113,12 +115,14 @@ export default function DashboardScreen() {
               unit="mg"
             />
             <MacroProgressBar
+              key="fiber"
               name="Fiber"
               grams={summary.achieved?.fiber || 0}
               target={summary.targets?.fiber || 25}
               percent={summary.percent_of_target?.fiber || 0}
             />
             <MacroProgressBar
+              key="protein"
               name="Protein"
               grams={summary.achieved?.protein || 0}
               target={summary.targets?.protein || 120}

@@ -66,7 +66,7 @@ export const DailyMealsList: React.FC<DailyMealsListProps> = ({ meals }) => {
 
   return (
     <View style={styles.listContainer}>
-      {meals.map(renderMealItem)}
+      {meals.map((meal, index) => renderMealItem(meal, index))}
     </View>
   );
 };

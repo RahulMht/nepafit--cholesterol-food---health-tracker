@@ -51,7 +51,7 @@ const renderChart = (data: { day: string; value: number }[]) => {
             
             return (
               <Rect
-                key={`bar-${item.day}-${index}`}
+                key={`bar-${item.day}-${index}-${item.value}`}
                 x={x}
                 y={y}
                 width={barWidth}
@@ -66,7 +66,7 @@ const renderChart = (data: { day: string; value: number }[]) => {
         {/* X-axis labels */}
         <View style={styles.xAxisLabels}>
           {data.map((item, index) => (
-            <View key={`label-${item.day}-${index}`} style={[styles.labelContainer, { width: barWidth + barSpacing }]}>
+            <View key={`label-${item.day}-${index}-${item.value}`} style={[styles.labelContainer, { width: barWidth + barSpacing }]}>
               <Text style={styles.dayLabel}>{item.day}</Text>
               <Text style={styles.valueLabel}>{item.value}mg</Text>
             </View>
