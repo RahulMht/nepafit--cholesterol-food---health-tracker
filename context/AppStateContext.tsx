@@ -347,7 +347,7 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
       cholesterol: result.cholesterol || 0, // Use actual values from response
       fiber: result.fiber || 0, // Use actual values from response
       protein: result.protein || 0, // Use actual values from response
-      imageUrl: imageUrl || undefined, // Use the Cloudinary image URL
+      imageUrl: imageUrl, // Use the Cloudinary image URL
       timestamp: result.timestamp || new Date().toISOString(),
       status: "sent" as const,
     };
@@ -1226,7 +1226,9 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         showFoodInfoPopup(result.meal);
         
         // Refresh current week data since today's value changed (only call API for current week)
-        loadWeeklySummaryData(0);
+        if (weekOffset === 0) {
+          loadWeeklySummaryData(0);
+        }
         
         return { success: true, meal: result.meal };
       } catch (error) {
