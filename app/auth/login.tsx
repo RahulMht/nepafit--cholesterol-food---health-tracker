@@ -224,8 +224,8 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "700",
     color: Colors.primary,
-    marginBottom: 8,
-    marginTop: 8,
+    marginBottom: 4,
+    marginTop: 4,
   },
   tagline: {
     fontSize: 16,
