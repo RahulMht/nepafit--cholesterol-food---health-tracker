@@ -11,7 +11,7 @@ export const AppLogo: React.FC<AppLogoProps> = ({ size = 80 }) => {
     <View style={[styles.container, { width: size, height: size }]}>
       <Image
         source={require("@/assets/images/logo.png")}
-        style={[styles.logo, { width: size, height: size }]}
+        style={[styles.logo, { width: size * 0.8, height: size * 0.8 }]}
         resizeMode="contain"
       />
     </View>
@@ -20,7 +20,7 @@ export const AppLogo: React.FC<AppLogoProps> = ({ size = 80 }) => {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: "hidden",
     elevation: 4,
     shadowColor: "#000",
@@ -30,8 +30,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     justifyContent: "center",
     alignItems: "center",
+    padding: 8,
   },
   logo: {
-    borderRadius: 20,
+    borderRadius: 12,
   },
 });

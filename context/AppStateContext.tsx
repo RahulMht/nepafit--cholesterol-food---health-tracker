@@ -781,6 +781,15 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     filterTodayMeals();
   }, [allMeals]);
 
+  // Update summary whenever todayMeals changes
+  useEffect(() => {
+    if (todayMeals.length > 0) {
+      console.log("Today's meals changed, updating local summary");
+      const localSummary = calculateLocalSummary(todayMeals);
+      setSummary(localSummary);
+    }
+  }, [todayMeals]);
+
   // Load stored meals from storage
   const loadStoredMeals = async () => {
     try {
@@ -1056,7 +1065,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     setFoodInfoPopup({ visible: false, meal: null });
   };
 
-  // Log meal function - now uploads images to Cloudinary first
+  // Log meal function - now uploads images to Cloudinary first and updates dashboard immediately
   const logMeal = async (mealData: any): Promise<{ success: boolean; meal?: Meal; error?: string }> => {
     console.log("logMeal called with:", mealData);
     
@@ -1101,7 +1110,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
           };
         }
         
-        // Add to all meals - this will trigger the useEffect to update todayMeals
+        // Add to all meals - this will trigger the useEffect to update todayMeals and summary
         const updatedMeals = [result.meal, ...allMeals];
         console.log("Adding meal to allMeals. New meal:", result.meal);
         console.log("Updated meals count:", updatedMeals.length);
@@ -1109,11 +1118,15 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         setAllMeals(updatedMeals);
         await saveMealsToStorage(updatedMeals);
         
-        // Reload summary data from API after adding meal
-        await loadSummaryData();
-        
         // Show food info popup immediately
         showFoodInfoPopup(result.meal);
+        
+        // Also try to sync with API in background (don't wait for it)
+        setTimeout(() => {
+          loadSummaryData().catch(error => {
+            console.log("Background API sync failed:", error);
+          });
+        }, 1000);
         
         return { success: true, meal: result.meal };
       } catch (error) {
