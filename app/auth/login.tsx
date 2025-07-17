@@ -33,7 +33,7 @@ export default function LoginScreen() {
 
   const isEmailValid = EMAIL_REGEX.test(email);
   const isPasswordValid = PASSWORD_REGEX.test(password);
-  const isFormValid = isEmailValid && isPasswordValid && !isOffline;
+  const isFormValid = isEmailValid && isPasswordValid;
 
   const handleLogin = async () => {
     if (!isFormValid) return;
@@ -58,8 +58,6 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = async () => {
-    if (isOffline) return;
-
     setIsGoogleLoading(true);
     setError("");
 
@@ -99,19 +97,14 @@ export default function LoginScreen() {
 
         <View style={styles.formContainer}>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          {isOffline && (
-            <Text style={styles.offlineText}>
-              You're offline. Please connect to the internet to log in.
-            </Text>
-          )}
 
           <Pressable
             style={[
               styles.googleButton,
-              (isOffline || isGoogleLoading) && styles.disabledButton
+              isGoogleLoading && styles.disabledButton
             ]}
             onPress={handleGoogleLogin}
-            disabled={isOffline || isGoogleLoading}
+            disabled={isGoogleLoading}
           >
             <Image
               source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}

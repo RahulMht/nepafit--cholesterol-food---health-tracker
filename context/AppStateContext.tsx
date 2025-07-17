@@ -17,9 +17,10 @@ if (Platform.OS !== 'web') {
 const FOOD_INTAKE_WEBHOOK = "https://foothaven.app.n8n.cloud/webhook/4f5c25b0-30cf-408c-83f9-a37266cc6788";
 const SUMMARY_WEBHOOK = "https://foothaven.app.n8n.cloud/webhook/0cf5a4d3-fe19-41be-9b5a-98e343742fd5";
 const CHAT_WEBHOOK = "https://foothaven.app.n8n.cloud/webhook/6f23d85e-3d50-4593-8521-3b561bc42b75";
-const LOGIN_WEBHOOK = "https://your-api.com/auth/login"; // Replace with your login webhook
-const REGISTER_WEBHOOK = "https://your-api.com/auth/register"; // Replace with your register webhook
-const GOOGLE_AUTH_WEBHOOK = "https://your-api.com/auth/google"; // Replace with your Google auth webhook
+// Auth webhooks - Not used since app uses local mock authentication
+// const LOGIN_WEBHOOK = "https://your-api.com/auth/login";
+// const REGISTER_WEBHOOK = "https://your-api.com/auth/register";
+// const GOOGLE_AUTH_WEBHOOK = "https://your-api.com/auth/google";
 
 // Cloudinary configuration - FIXED
 const CLOUDINARY_CLOUD_NAME = "djxhholpn";
@@ -29,7 +30,7 @@ const CLOUDINARY_API_SECRET = "eXUX0EsbhN9zIfchtZQixi2mcAk";
 // Google OAuth configuration - Fixed type handling
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || "your-google-client-id.apps.googleusercontent.com";
 
-// Pre-created users database - Updated with Rahul Mahatha (height converted to cm)
+// Pre-created users database for local authentication (no webhooks needed)
 const USERS_DATABASE = [
   {
     email: "test@example.com",
@@ -529,7 +530,7 @@ const getFallbackWeeklySummary = (): WeeklySummary => ({
   todayMeals: [],
 });
 
-// Mock API functions - Updated with user database
+// Mock API functions - Work locally without webhooks
 const mockAuthLogin = async (email: string, password: string) => {
   // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 1000));

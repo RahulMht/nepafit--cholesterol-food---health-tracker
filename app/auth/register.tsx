@@ -32,7 +32,7 @@ export default function RegisterScreen() {
   const isEmailValid = EMAIL_REGEX.test(email);
   const isPasswordValid = PASSWORD_REGEX.test(password);
   const isConfirmPasswordValid = password === confirmPassword && confirmPassword.length > 0;
-  const isFormValid = isNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid && !isOffline;
+  const isFormValid = isNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid;
 
   const handleRegister = async () => {
     if (!isFormValid) return;
@@ -81,11 +81,6 @@ export default function RegisterScreen() {
 
         <View style={styles.formContainer}>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          {isOffline && (
-            <Text style={styles.offlineText}>
-              You're offline. Please connect to the internet to register.
-            </Text>
-          )}
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Full Name</Text>
