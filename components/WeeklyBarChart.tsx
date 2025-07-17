@@ -33,11 +33,14 @@ const renderChart = (data: { day: string; value: number }[]) => {
   const yAxisWidth = 40;
   const totalWidth = chartWidth + yAxisWidth;
 
-  // Get color based on value relative to target (assuming target is 200mg cholesterol)
+  // Get color based on value relative to daily limit (300mg for cholesterol)
   const getBarColor = (value: number) => {
-    if (value <= 200) return "#4CAF50"; // Green - Good
-    if (value <= 240) return "#FF9800"; // Orange - Borderline
-    return "#F44336"; // Red - High
+    const dailyLimit = 300;
+    const percentage = (value / dailyLimit) * 100;
+    
+    if (percentage < 50) return "#81C784"; // Light green - Good (0-150mg)
+    if (percentage < 80) return "#FFC107"; // Yellow - Moderate (150-240mg)
+    return "#FF9800"; // Orange - High (240mg+)
   };
 
   // Calculate Y-axis scale with better spacing
@@ -124,7 +127,7 @@ const renderChart = (data: { day: string; value: number }[]) => {
       
       <View style={styles.targetLine}>
         <View style={styles.targetDash} />
-        <Text style={styles.targetLabel}>Target: less than 200mg daily</Text>
+        <Text style={styles.targetLabel}>Daily limit: 300mg</Text>
       </View>
     </View>
   );
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
   targetDash: {
     width: 16,
     height: 2,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#81C784",
     marginRight: 8,
   },
   targetLabel: {
