@@ -108,24 +108,6 @@ const getWeekDates = (weekOffset: number = 0): { startDate: string; endDate: str
   };
 };
 
-// Helper function to get day start and end dates
-const getDayDates = (dayOffset: number = 0): { startDate: string; endDate: string } => {
-  const today = new Date();
-  const targetDay = new Date(today);
-  targetDay.setDate(today.getDate() + dayOffset);
-  
-  const startDate = new Date(targetDay);
-  startDate.setHours(0, 0, 0, 0);
-  
-  const endDate = new Date(targetDay);
-  endDate.setHours(23, 59, 59, 999);
-  
-  return {
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString()
-  };
-};
-
 // Generate SHA-1 hash for Cloudinary signature
 const generateSHA1 = async (data: string): Promise<string> => {
   const digest = await Crypto.digestStringAsync(
@@ -381,76 +363,6 @@ const logMealAPI = async (mealData: any): Promise<{ meal: Meal; foodIdentified: 
   }
 };
 
-// Real API function for daily summary - FIXED to handle "output" wrapper
-const loadDailySummaryAPI = async (dayOffset: number = 0): Promise<Summary> => {
-  try {
-    const token = await storage.getItem("authToken");
-    
-    // Get the target day's date range
-    const { startDate, endDate } = getDayDates(dayOffset);
-    
-    const requestPayload = {
-      startDate,
-      endDate,
-      type: "daily" // Indicate this is a daily summary request
-    };
-
-    console.log("Fetching daily summary from webhook:", SUMMARY_WEBHOOK);
-    console.log("Request payload:", requestPayload);
-
-    // Add timeout to prevent hanging - 30 seconds
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-    const response = await fetch(SUMMARY_WEBHOOK, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-      body: JSON.stringify(requestPayload),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-    console.log("Daily summary response status:", response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Daily summary webhook error response:", errorText);
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const responseData = await response.json();
-    console.log("Daily summary webhook response:", responseData);
-    
-    // Handle the response format with "output" wrapper - FIXED
-    let result;
-    if (responseData && responseData.output) {
-      result = responseData.output;
-      console.log("Extracted data from output wrapper:", result);
-    } else {
-      result = responseData;
-      console.log("Using direct response data:", result);
-    }
-    
-    // Transform the response to match our Summary interface
-    const summary: Summary = {
-      achieved: result.achieved || { cal: 0, saturatedFat: 0, cholesterol: 0, fiber: 0, protein: 0 },
-      targets: result.targets || { cal: 1800, saturatedFat: 20, cholesterol: 200, fiber: 25, protein: 120 },
-      percent_of_target: result.percent_of_target || { saturatedFat: 0, cholesterol: 0, fiber: 0, protein: 0 },
-      meals: result.meals || [],
-      stale: false,
-    };
-    
-    console.log("Transformed summary:", summary);
-    return summary;
-  } catch (error) {
-    console.error("Error calling daily summary webhook:", error);
-    throw error;
-  }
-};
-
 // Real API function for chat - SIMPLIFIED and FIXED to properly handle the webhook response format
 const sendChatMessageAPI = async (message: string): Promise<{ text: string }> => {
   try {
@@ -542,15 +454,6 @@ const calculateLocalSummary = (todayMeals: Meal[]): Summary => {
     stale: false,
   };
 };
-
-// Fallback summary data
-const getFallbackSummary = (): Summary => ({
-  achieved: { cal: 0, saturatedFat: 0, cholesterol: 0, fiber: 0, protein: 0 },
-  targets: { cal: 1800, saturatedFat: 20, cholesterol: 200, fiber: 25, protein: 120 },
-  percent_of_target: { saturatedFat: 0, cholesterol: 0, fiber: 0, protein: 0 },
-  meals: [],
-  stale: true,
-});
 
 // Fallback weekly summary data
 const getFallbackWeeklySummary = (): WeeklySummary => ({
@@ -708,8 +611,6 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         await checkAuthStatus();
         await loadStoredMeals();
         await loadUserProfile();
-        // Load initial summary data
-        await loadSummaryData();
       } catch (error) {
         console.error("Error initializing app:", error);
       } finally {
@@ -739,9 +640,8 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     
     const timeout = setTimeout(() => {
       // Clear today's meals and reload data for the new day
-      console.log("New day started - clearing today's meals and reloading data");
+      console.log("New day started - clearing today's meals");
       setTodayMeals([]);
-      loadSummaryData(); // Reload summary for new day
     }, msUntilMidnight);
 
     return () => clearTimeout(timeout);
@@ -760,11 +660,9 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
 
   // Update summary whenever todayMeals changes
   useEffect(() => {
-    if (todayMeals.length > 0) {
-      console.log("Today's meals changed, updating local summary");
-      const localSummary = calculateLocalSummary(todayMeals);
-      setSummary(localSummary);
-    }
+    console.log("Today's meals changed, updating local summary");
+    const localSummary = calculateLocalSummary(todayMeals);
+    setSummary(localSummary);
   }, [todayMeals]);
 
   // Load stored meals from storage
@@ -1109,13 +1007,6 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         // Show food info popup immediately
         showFoodInfoPopup(result.meal);
         
-        // Also try to sync with API in background (don't wait for it)
-        setTimeout(() => {
-          loadSummaryData().catch(error => {
-            console.log("Background API sync failed:", error);
-          });
-        }, 1000);
-        
         return { success: true, meal: result.meal };
       } catch (error) {
         console.error("Error logging meal:", error);
@@ -1147,29 +1038,6 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     }
   };
 
-  // Load summary data - Updated to use webhook
-  const loadSummaryData = async (dayOffset: number = 0) => {
-    if (isOffline) {
-      console.log("App is offline, using local calculation for summary");
-      const localSummary = calculateLocalSummary(todayMeals);
-      setSummary(localSummary);
-      return;
-    }
-
-    try {
-      console.log("Loading summary data from webhook...");
-      const summaryData = await loadDailySummaryAPI(dayOffset);
-      setSummary(summaryData);
-      console.log("Summary data loaded from webhook:", summaryData);
-    } catch (error) {
-      console.error("Error loading summary data from webhook:", error);
-      // Fall back to local calculation if webhook fails
-      console.log("Falling back to local calculation");
-      const localSummary = calculateLocalSummary(todayMeals);
-      setSummary({ ...localSummary, stale: true });
-    }
-  };
-
   return {
     isOffline,
     isLoading,
@@ -1193,7 +1061,6 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     sendChatMessage,
     showFoodInfoPopup,
     hideFoodInfoPopup,
-    loadSummaryData,
     loadWeeklySummaryData,
   };
 });
