@@ -24,10 +24,10 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
 
   // Determine color based on percentage
   const getColor = () => {
-    if (percent < 0.5) return "#81C784"; // Light green
+    if (percent < 0.5) return Colors.success; // Green
     if (percent < 0.75) return Colors.primary; // Primary green
-    if (percent < 0.9) return "#FFC107"; // Yellow
-    return "#FF9800"; // Orange
+    if (percent < 0.9) return Colors.warning; // Orange
+    return Colors.error; // Red
   };
 
   const centerX = size / 2;

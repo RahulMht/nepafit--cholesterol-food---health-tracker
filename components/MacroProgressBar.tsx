@@ -29,13 +29,8 @@ export const MacroProgressBar: React.FC<MacroProgressBarProps> = ({
 
   // Determine color based on percentage and macro type
   const getColor = () => {
-    if (name === "Cholesterol") {
-      // For cholesterol: light green (0-50%), yellow (50-80%), orange (80%+)
-      if (percent < 50) return "#81C784"; // Light green - Good
-      if (percent < 80) return "#FFC107"; // Yellow - Moderate
-      return "#FF9800"; // Orange - High
-    } else if (name === "Saturated Fat") {
-      // For saturated fat, lower is better
+    if (name === "Saturated Fat" || name === "Cholesterol") {
+      // For cholesterol and saturated fat, lower is better
       if (percent < 50) return Colors.success; // Green - Good
       if (percent < 75) return Colors.warning; // Orange - Moderate
       return Colors.error; // Red - High
