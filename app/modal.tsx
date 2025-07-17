@@ -17,6 +17,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 
 import { useAppState } from "@/context/AppStateContext";
+import { Colors } from "@/constants/colors";
 
 type TabType = "gallery" | "camera" | "text";
 type MealType = "Breakfast" | "Lunch" | "Dinner" | "Snack" | "Drink";
@@ -174,7 +175,7 @@ export default function LogFoodModal() {
                   style={styles.removeImageButton} 
                   onPress={() => setImage(null)}
                 >
-                  <X size={20} color="#FFFFFF" />
+                  <X size={20} color={Colors.onPrimary} />
                 </Pressable>
               </View>
             ) : (
@@ -182,7 +183,7 @@ export default function LogFoodModal() {
                 style={styles.pickImageButton} 
                 onPress={handlePickImage}
               >
-                <ImageIcon size={48} color="#2196F3" />
+                <ImageIcon size={48} color={Colors.primary} />
                 <Text style={styles.pickImageText}>Select from Gallery</Text>
               </Pressable>
             )}
@@ -199,7 +200,7 @@ export default function LogFoodModal() {
                   style={styles.removeImageButton} 
                   onPress={() => setImage(null)}
                 >
-                  <X size={20} color="#FFFFFF" />
+                  <X size={20} color={Colors.onPrimary} />
                 </Pressable>
               </View>
             ) : (
@@ -207,7 +208,7 @@ export default function LogFoodModal() {
                 style={styles.pickImageButton} 
                 onPress={handleTakePhoto}
               >
-                <Camera size={48} color="#2196F3" />
+                <Camera size={48} color={Colors.primary} />
                 <Text style={styles.pickImageText}>Take Photo</Text>
               </Pressable>
             )}
@@ -224,13 +225,14 @@ export default function LogFoodModal() {
                   style={styles.removeImageButton} 
                   onPress={() => setImage(null)}
                 >
-                  <X size={20} color="#FFFFFF" />
+                  <X size={20} color={Colors.onPrimary} />
                 </Pressable>
               </View>
             )}
             <TextInput
               style={styles.descriptionInput}
               placeholder={image ? "Describe your meal (optional)" : "Describe your meal (e.g., 'Chicken salad with olive oil')"}
+              placeholderTextColor={Colors.gray500}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -251,6 +253,13 @@ export default function LogFoodModal() {
       <Stack.Screen 
         options={{
           title: "Log Food",
+          headerStyle: {
+            backgroundColor: Colors.surface,
+          },
+          headerTitleStyle: {
+            color: Colors.onSurface,
+          },
+          headerTintColor: Colors.primary,
           headerRight: () => (
             <Pressable
               onPress={router.back}
@@ -259,7 +268,7 @@ export default function LogFoodModal() {
                 { opacity: pressed ? 0.7 : 1 },
               ]}
             >
-              <X size={24} color="#757575" />
+              <X size={24} color={Colors.gray600} />
             </Pressable>
           ),
         }} 
@@ -270,7 +279,7 @@ export default function LogFoodModal() {
           style={[styles.tab, activeTab === "gallery" && styles.activeTab]}
           onPress={() => handleTabChange("gallery")}
         >
-          <ImageIcon size={20} color={activeTab === "gallery" ? "#2196F3" : "#757575"} />
+          <ImageIcon size={20} color={activeTab === "gallery" ? Colors.primary : Colors.gray600} />
           <Text style={[styles.tabText, activeTab === "gallery" && styles.activeTabText]}>
             Gallery
           </Text>
@@ -279,7 +288,7 @@ export default function LogFoodModal() {
           style={[styles.tab, activeTab === "camera" && styles.activeTab]}
           onPress={() => handleTabChange("camera")}
         >
-          <Camera size={20} color={activeTab === "camera" ? "#2196F3" : "#757575"} />
+          <Camera size={20} color={activeTab === "camera" ? Colors.primary : Colors.gray600} />
           <Text style={[styles.tabText, activeTab === "camera" && styles.activeTabText]}>
             Camera
           </Text>
@@ -288,7 +297,7 @@ export default function LogFoodModal() {
           style={[styles.tab, activeTab === "text" && styles.activeTab]}
           onPress={() => handleTabChange("text")}
         >
-          <Type size={20} color={activeTab === "text" ? "#2196F3" : "#757575"} />
+          <Type size={20} color={activeTab === "text" ? Colors.primary : Colors.gray600} />
           <Text style={[styles.tabText, activeTab === "text" && styles.activeTabText]}>
             Text
           </Text>
@@ -335,7 +344,7 @@ export default function LogFoodModal() {
               onPress={() => handleServingsChange(false)}
               disabled={servings <= 0.25}
             >
-              <Minus size={20} color={servings <= 0.25 ? "#BDBDBD" : "#2196F3"} />
+              <Minus size={20} color={servings <= 0.25 ? Colors.gray400 : Colors.primary} />
             </Pressable>
             
             <View style={styles.servingValueContainer}>
@@ -348,7 +357,7 @@ export default function LogFoodModal() {
               onPress={() => handleServingsChange(true)}
               disabled={servings >= 10}
             >
-              <Plus size={20} color={servings >= 10 ? "#BDBDBD" : "#2196F3"} />
+              <Plus size={20} color={servings >= 10 ? Colors.gray400 : Colors.primary} />
             </Pressable>
           </View>
         </View>
@@ -364,7 +373,7 @@ export default function LogFoodModal() {
           disabled={!isFormValid() || isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={Colors.onPrimary} />
           ) : (
             <Text style={styles.analyzeButtonText}>
               {isOffline ? "Save for Later" : "Analyze Now"}
@@ -379,7 +388,7 @@ export default function LogFoodModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.background,
   },
   closeButton: {
     padding: 8,
@@ -387,7 +396,8 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    borderBottomColor: Colors.gray200,
+    backgroundColor: Colors.surface,
   },
   tab: {
     flex: 1,
@@ -399,14 +409,14 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: "#2196F3",
+    borderBottomColor: Colors.primary,
   },
   tabText: {
     fontSize: 14,
-    color: "#757575",
+    color: Colors.gray600,
   },
   activeTabText: {
-    color: "#2196F3",
+    color: Colors.primary,
     fontWeight: "600",
   },
   content: {
@@ -416,6 +426,7 @@ const styles = StyleSheet.create({
     height: 300,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: Colors.surface,
   },
   pickImageButton: {
     alignItems: "center",
@@ -425,7 +436,8 @@ const styles = StyleSheet.create({
   pickImageText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#2196F3",
+    color: Colors.primary,
+    fontWeight: "500",
   },
   previewContainer: {
     width: "100%",
@@ -450,29 +462,34 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     padding: 16,
+    backgroundColor: Colors.surface,
   },
   descriptionInput: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: Colors.surfaceVariant,
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
     minHeight: 120,
     textAlignVertical: "top",
+    color: Colors.onSurface,
+    borderWidth: 1,
+    borderColor: Colors.gray200,
   },
   helperText: {
     fontSize: 12,
-    color: "#757575",
+    color: Colors.gray600,
     marginTop: 8,
     fontStyle: "italic",
   },
   mealTypeContainer: {
     padding: 16,
+    backgroundColor: Colors.surface,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 12,
-    color: "#212121",
+    color: Colors.onSurface,
   },
   mealTypeScroll: {
     paddingRight: 16,
@@ -481,22 +498,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: Colors.surfaceVariant,
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: Colors.gray200,
   },
   activeMealTypeChip: {
-    backgroundColor: "#2196F3",
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   mealTypeText: {
     fontSize: 14,
-    color: "#757575",
+    color: Colors.gray700,
   },
   activeMealTypeText: {
-    color: "#FFFFFF",
+    color: Colors.onPrimary,
     fontWeight: "500",
   },
   servingsContainer: {
     padding: 16,
+    backgroundColor: Colors.surface,
   },
   servingsControls: {
     flexDirection: "row",
@@ -508,15 +529,15 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: Colors.surfaceVariant,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: Colors.gray200,
   },
   disabledServingButton: {
-    backgroundColor: "#FAFAFA",
-    borderColor: "#F0F0F0",
+    backgroundColor: Colors.gray100,
+    borderColor: Colors.gray200,
   },
   servingValueContainer: {
     alignItems: "center",
@@ -525,30 +546,38 @@ const styles = StyleSheet.create({
   servingValue: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#2196F3",
+    color: Colors.primary,
   },
   servingLabel: {
     fontSize: 12,
-    color: "#757575",
+    color: Colors.gray600,
     marginTop: 2,
   },
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
+    borderTopColor: Colors.gray200,
+    backgroundColor: Colors.surface,
   },
   analyzeButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   disabledButton: {
-    backgroundColor: "#BDBDBD",
+    backgroundColor: Colors.gray400,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   analyzeButtonText: {
-    color: "#FFFFFF",
+    color: Colors.onPrimary,
     fontSize: 16,
     fontWeight: "600",
   },
