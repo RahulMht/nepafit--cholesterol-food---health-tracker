@@ -12,7 +12,7 @@ export default function HistoryScreen() {
   const [isLoadingWeek, setIsLoadingWeek] = useState(false);
   const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load data when week changes with debounce
+  // Load data when week changes - only for current week or from cache for past weeks
   useEffect(() => {
     // Clear any existing timeout
     if (loadTimeoutRef.current) {
@@ -25,13 +25,19 @@ export default function HistoryScreen() {
     // Debounce the load request
     loadTimeoutRef.current = setTimeout(async () => {
       try {
-        await loadWeeklySummaryData(currentWeek);
+        // Only call API for current week (0), use cache for past weeks
+        if (currentWeek === 0) {
+          await loadWeeklySummaryData(currentWeek);
+        } else {
+          // For past weeks, just get from cache without API call
+          await loadWeeklySummaryData(currentWeek);
+        }
       } catch (error) {
         console.error("Error loading weekly data:", error);
       } finally {
         setIsLoadingWeek(false);
       }
-    }, 300); // 300ms debounce
+    }, 100); // Reduced debounce for better UX
 
     // Cleanup timeout on unmount
     return () => {
@@ -56,13 +62,8 @@ export default function HistoryScreen() {
     return "Future Week"; // This shouldn't happen as we disable future navigation
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading your history...</Text>
-      </View>
-    );
-  }
+  // Remove the global loading check since we should have cached data
+  // Only show loading for individual week changes
 
   return (
     <View style={styles.container}>

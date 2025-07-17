@@ -25,11 +25,18 @@ export const WeeklyBarChart: React.FC<WeeklyBarChartProps> = ({ data }) => {
 };
 
 const renderChart = (data: { day: string; value: number }[]) => {
-  const maxValue = Math.max(...data.map((item) => item.value), 300);
+  // Ensure data is ordered from Sunday to Saturday
+  const dayOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const orderedData = dayOrder.map(day => {
+    const found = data.find(item => item.day === day);
+    return found || { day, value: 0 };
+  });
+
+  const maxValue = Math.max(...orderedData.map((item) => item.value), 300);
   const chartHeight = 180;
   const barWidth = 24;
   const barSpacing = 16;
-  const chartWidth = data.length * (barWidth + barSpacing) - barSpacing;
+  const chartWidth = orderedData.length * (barWidth + barSpacing) - barSpacing;
   
   // Calculate y-axis tick marks (integers only)
   const yAxisTicks = [];
@@ -65,7 +72,7 @@ const renderChart = (data: { day: string; value: number }[]) => {
         
         <View style={styles.chartAndXAxis}>
           <Svg width={chartWidth} height={chartHeight}>
-            {data.map((item, index) => {
+            {orderedData.map((item, index) => {
               const barHeight = item.value ? (item.value / maxValue) * (chartHeight - 40) : 2;
               const x = index * (barWidth + barSpacing);
               const y = chartHeight - barHeight - 20;
@@ -86,7 +93,7 @@ const renderChart = (data: { day: string; value: number }[]) => {
           
           {/* X-axis labels */}
           <View style={styles.xAxisLabels}>
-            {data.map((item, index) => (
+            {orderedData.map((item, index) => (
               <View key={`label-${chartId}-${item.day}-${index}`} style={[styles.labelContainer, { width: barWidth + barSpacing }]}>
                 <Text style={styles.dayLabel}>{item.day}</Text>
                 <Text style={styles.valueLabel}>{Math.round(item.value)}mg</Text>

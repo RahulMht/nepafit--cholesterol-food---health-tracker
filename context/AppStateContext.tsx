@@ -1055,7 +1055,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         setWeeklySummary(getFallbackWeeklySummary());
       }
     } else {
-      // For past weeks, use cached data first
+      // For past weeks, ONLY use cached data - don't make API calls
       const cachedData = cachedWeeklyData.get(weekOffset);
       if (cachedData) {
         setWeeklySummary(cachedData);
@@ -1063,29 +1063,9 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
         return;
       }
 
-      // If not in cache, try to load from API as fallback
-      console.log(`No cached data for week ${weekOffset}, trying API...`);
-      if (isOffline) {
-        console.log("App is offline, using fallback");
-        setWeeklySummary(getFallbackWeeklySummary());
-        return;
-      }
-
-      try {
-        const weekData = await loadWeeklyDataFromAPI(weekOffset);
-        if (weekData) {
-          setWeeklySummary(weekData);
-          // Cache the newly loaded data
-          setCachedWeeklyData(prev => new Map(prev).set(weekOffset, weekData));
-          console.log(`Loaded and cached data for week ${weekOffset}`);
-        } else {
-          console.log(`No data available for week ${weekOffset}, using fallback`);
-          setWeeklySummary(getFallbackWeeklySummary());
-        }
-      } catch (error) {
-        console.error(`Error loading week ${weekOffset} data:`, error);
-        setWeeklySummary(getFallbackWeeklySummary());
-      }
+      // If not in cache, use fallback (don't make API call for past weeks from History page)
+      console.log(`No cached data for week ${weekOffset}, using fallback`);
+      setWeeklySummary(getFallbackWeeklySummary());
     }
   };
 
