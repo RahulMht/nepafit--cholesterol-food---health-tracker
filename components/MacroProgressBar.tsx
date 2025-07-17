@@ -34,6 +34,12 @@ export const MacroProgressBar: React.FC<MacroProgressBarProps> = ({
       if (percent < 50) return Colors.success; // Green - Good
       if (percent < 75) return Colors.warning; // Orange - Moderate
       return Colors.error; // Red - High
+    } else if (name === "Fiber" || name === "Protein") {
+      // For fiber and protein, higher is better - never show red
+      if (percent < 50) return Colors.success; // Green
+      if (percent < 75) return Colors.primary; // Primary green
+      if (percent < 100) return Colors.warning; // Orange - approaching target
+      return Colors.success; // Green - exceeded target (good for fiber/protein)
     } else {
       // For other macros, moderate levels are good
       if (percent < 50) return Colors.success; // Green
