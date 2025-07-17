@@ -693,7 +693,7 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
     }
   };
 
-  // Load weekly summary data from API - FIXED to handle "output" wrapper
+  // Load weekly summary data from API - FIXED to handle array response format
   const loadWeeklySummaryData = async (weekOffset: number = 0) => {
     if (isOffline) {
       console.log("App is offline, using fallback weekly summary");
@@ -739,12 +739,29 @@ const [AppStateProvider, useAppStateInternal] = createContextHook(() => {
       const responseData = await response.json();
       console.log("Weekly summary webhook response:", responseData);
       
-      // Handle the response format with "output" wrapper - FIXED
+      // Handle the response format - FIXED to handle array response
       let result;
-      if (responseData && responseData.output) {
+      
+      // Check if response is an array (new format)
+      if (Array.isArray(responseData) && responseData.length > 0) {
+        // Get the first element from the array
+        const firstElement = responseData[0];
+        console.log("Response is array, using first element:", firstElement);
+        
+        // Check if it has output wrapper
+        if (firstElement && firstElement.output) {
+          result = firstElement.output;
+          console.log("Extracted weekly data from array output wrapper:", result);
+        } else {
+          result = firstElement;
+          console.log("Using direct array element data:", result);
+        }
+      } else if (responseData && responseData.output) {
+        // Handle single object with output wrapper
         result = responseData.output;
-        console.log("Extracted weekly data from output wrapper:", result);
+        console.log("Extracted weekly data from single output wrapper:", result);
       } else {
+        // Handle direct response
         result = responseData;
         console.log("Using direct weekly response data:", result);
       }
