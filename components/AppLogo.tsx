@@ -1,38 +1,16 @@
 import React from "react";
-import { View, StyleSheet, Image } from "react-native";
-import { Colors } from "@/constants/colors";
+import { Image } from "react-native";
 
 interface AppLogoProps {
   size?: number;
 }
 
-export const AppLogo: React.FC<AppLogoProps> = ({ size = 80 }) => {
+export const AppLogo: React.FC<AppLogoProps> = ({ size = 240 }) => {
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
-      <Image
-        source={require("@/assets/images/logo.png")}
-        style={[styles.logo, { width: size * 0.8, height: size * 0.8 }]}
-        resizeMode="contain"
-      />
-    </View>
+    <Image
+      source={require("@/assets/images/logo.png")}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+    />
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.84,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 8,
-  },
-  logo: {
-    borderRadius: 12,
-  },
-});
