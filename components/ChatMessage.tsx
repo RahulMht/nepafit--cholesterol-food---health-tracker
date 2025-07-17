@@ -10,18 +10,21 @@ interface ChatMessageProps {
   message: Message;
 }
 
-// Helper function to parse markdown-style bold text
+// Helper function to parse markdown-style bold text - FIXED
 const parseMessageText = (text: string, isUser: boolean) => {
+  // Split by **text** pattern while preserving the delimiters
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   
   return parts.map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
       // Remove the ** markers and make it bold
       const boldText = part.slice(2, -2);
       return (
         <Text 
           key={index} 
           style={[
+            styles.messageText,
+            isUser ? styles.userText : styles.assistantText,
             styles.boldText,
             isUser ? styles.userBoldText : styles.assistantBoldText
           ]}
@@ -30,7 +33,18 @@ const parseMessageText = (text: string, isUser: boolean) => {
         </Text>
       );
     }
-    return part;
+    // Return regular text
+    return (
+      <Text 
+        key={index}
+        style={[
+          styles.messageText,
+          isUser ? styles.userText : styles.assistantText
+        ]}
+      >
+        {part}
+      </Text>
+    );
   });
 };
 
@@ -70,7 +84,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         onLongPress={handleCopyMessage}
         delayLongPress={500}
       >
-        <Text style={[styles.messageText, isUser ? styles.userText : styles.assistantText]}>
+        <Text style={styles.messageContainer}>
           {parseMessageText(message.text, isUser)}
         </Text>
         
@@ -131,6 +145,10 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 6,
     borderWidth: 1,
     borderColor: Colors.gray200,
+  },
+  messageContainer: {
+    fontSize: 16,
+    lineHeight: 22,
   },
   messageText: {
     fontSize: 16,
