@@ -30,7 +30,7 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      <AppLogo size={120} />
+      <AppLogo size={480} />
       <Text style={styles.appName}>NepaFit</Text>
       <Text style={styles.tagline}>Your Heart Health Companion</Text>
       <ActivityIndicator 
