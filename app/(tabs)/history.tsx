@@ -4,7 +4,6 @@ import { Stack } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 
 import { WeeklyBarChart } from "@/components/WeeklyBarChart";
-import { DailyMealsList } from "@/components/DailyMealsList";
 import { useAppState } from "@/context/AppStateContext";
 
 export default function HistoryScreen() {
@@ -77,13 +76,6 @@ export default function HistoryScreen() {
           <Text style={styles.insightText}>
             {weeklySummary.insight || "Track your meals consistently to get personalized heart health insights."}
           </Text>
-        </View>
-
-        <View style={styles.dailyContainer}>
-          <Text style={styles.dailyTitle}>
-            {currentWeek === 0 ? "Today's Meals" : "Recent Meals"}
-          </Text>
-          <DailyMealsList meals={weeklySummary.todayMeals || []} />
         </View>
       </View>
     </View>
@@ -158,16 +150,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#424242",
     lineHeight: 24,
-  },
-  dailyContainer: {
-    flex: 1,
-    marginHorizontal: 16,
-    marginBottom: 24,
-  },
-  dailyTitle: {
-    fontSize: 18,
-    fontWeight: "600" as const,
-    color: "#212121",
-    marginBottom: 16,
   },
 });
