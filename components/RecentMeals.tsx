@@ -34,8 +34,14 @@ export const RecentMeals: React.FC<RecentMealsProps> = ({ meals }) => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.mealsContainer}
       >
-        {recentMeals.map((meal, index) => (
-          <Pressable key={`recent-meal-${meal.id || `${meal.timestamp}-${index}`}`} style={styles.mealCard}>
+        {recentMeals.map((meal, index) => {
+          // Create a unique key using multiple fallbacks
+          const uniqueKey = meal.id || 
+                           `${meal.timestamp}-${meal.description}` || 
+                           `meal-${index}-${Date.now()}`;
+          
+          return (
+            <Pressable key={uniqueKey} style={styles.mealCard}>
             {meal.imageUrl ? (
               <Image source={{ uri: meal.imageUrl }} style={styles.mealImage} />
             ) : (
@@ -59,7 +65,8 @@ export const RecentMeals: React.FC<RecentMealsProps> = ({ meals }) => {
               )}
             </View>
           </Pressable>
-        ))}
+          );
+        })}
       </ScrollView>
     </View>
   );
